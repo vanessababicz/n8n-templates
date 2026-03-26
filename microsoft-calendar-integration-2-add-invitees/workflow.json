@@ -1,0 +1,1735 @@
+{
+  "updatedAt": "2026-03-26T11:05:32.463Z",
+  "createdAt": "2025-11-13T06:55:04.807Z",
+  "id": "KXzejfck3kQ8o1jY",
+  "name": "Microsoft Calendar Integration 2: Add invitees",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query.validationToken }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        272,
+        272
+      ],
+      "id": "a80d4a9a-e3aa-446c-921d-e3fce6a95c7a",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// If it's validation, stop here (already handled)\nif ($input.first().json.query?.validationToken) {\n  return [];\n}\n\n// Check the changeType - only process \"created\" events\nconst notification = $input.first().json.body?.value?.[0];\nconst changeType = notification?.changeType;\n\nif (changeType !== 'created') {\n  return [];\n}\n\n// Extract user ID and event ID from resource path\n// Format: \"Users/{GUID}/Events/{eventId}\" (capital U and E)\nconst resource = notification?.resource || '';\nconst match = resource.match(/^[Uu]sers\\/([^\\/]+)\\/[Ee]vents\\/(.+)$/);\n\nconst userId = match ? match[1] : '';\nconst eventId = match ? match[2] : (notification?.resourceData?.id || '');\n\nif (!userId || !eventId) {\n  return [];\n}\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    userEmail: userId,\n    eventResourceId: eventId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        272
+      ],
+      "id": "447bd3c1-294b-46ed-8f58-ebf928401a2b",
+      "name": "Validate & Extract User"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://login.microsoftonline.com/f4acf7a3-3986-4e90-8763-81b2528c92d6/oauth2/v2.0/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client_id",
+              "value": "5323a07a-dafe-4cbc-8449-745a24b05d0c"
+            },
+            {
+              "name": "client_secret",
+              "value": "[your-azure-client-secret]"
+            },
+            {
+              "name": "scope",
+              "value": "https://graph.microsoft.com/.default"
+            },
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        272
+      ],
+      "id": "99885efb-0db6-4459-ace8-a02c0cb9eee0",
+      "name": "Get access token"
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.microsoft.com/v1.0/users/{{ $('Validate & Extract User').first().json.userEmail }}/events/{{ $('Validate & Extract User').first().json.eventResourceId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        944,
+        272
+      ],
+      "id": "7dcbf22c-8005-416a-98ae-a77827da2c4c",
+      "name": "Get Event via Graph",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const event = $('Get Event via Graph').first().json;\nconst userEmail = $('Validate & Extract User').first().json.userEmail;\nconst accessToken = $('Get access token').first().json.access_token;\nconst rawJoinUrl = event.onlineMeeting?.joinUrl;\n\nconst joinUrl = rawJoinUrl ? decodeURIComponent(rawJoinUrl) : '';\nconst isTeamEvent = userEmail.toLowerCase() === 'team@company.com';\n\nconst bodyContent = event.body?.content || '';\nconst isHubSpotMeeting = \n  bodyContent.includes('app.hubspot.com/meetings') &&\n  (bodyContent.includes('rescheduleId=') || bodyContent.includes('cancelId='));\n\nconst attendees = event.attendees || [];\nconst hasYour Name = attendees.some(a => a.emailAddress?.address === 'person1@company.com');\nconst hasAli = attendees.some(a => a.emailAddress?.address === 'person2@company.com');\nconst hasAde = attendees.some(a => a.emailAddress?.address === 'adeyinka.adeleke@yourcompany.com');\nconst allAttendeesPresent = hasYour Name && hasAli && hasAde;\n\nconst encodedEventId = encodeURIComponent(event.id || '');\n\nreturn [{\n  json: {\n    userEmail: userEmail,\n    accessToken: accessToken,\n    joinUrl: joinUrl,\n    hasJoinUrl: !!rawJoinUrl,\n    isTeamEvent: isTeamEvent,\n    isHubSpotMeeting: isHubSpotMeeting,\n    allAttendeesPresent: allAttendeesPresent,\n    shouldAddAttendees: isTeamEvent && isHubSpotMeeting && !allAttendeesPresent,\n    encodedEventId: encodedEventId,\n    existingAttendees: attendees\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        272
+      ],
+      "id": "befc030e-9d53-4e86-a48b-af644ac1cb6c",
+      "name": "Process Event Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "auto-record-check",
+              "leftValue": "={{ $json.hasJoinUrl }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1392,
+        176
+      ],
+      "id": "if-has-join-url",
+      "name": "Has Teams URL?"
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.microsoft.com/v1.0/users/{{ $json.userEmail }}/onlineMeetings",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "$filter",
+              "value": "=joinWebUrl eq '{{ $json.joinUrl }}'"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1616,
+        176
+      ],
+      "id": "cc000002-cc00-cc00-cc00-cc0000000002",
+      "name": "Get onlineMeeting",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "meeting-found-check",
+              "leftValue": "={{ ($json.value || []).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1840,
+        176
+      ],
+      "id": "if-meeting-found",
+      "name": "Meeting found?"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://graph.microsoft.com/v1.0/users/{{ $('Process Event Data').first().json.userEmail }}/onlineMeetings/{{ $json.value[0].id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"recordAutomatically\": true }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2064,
+        176
+      ],
+      "id": "cc000003-cc00-cc00-cc00-cc0000000003",
+      "name": "Set auto record",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "attendee-check",
+              "leftValue": "={{ $json.shouldAddAttendees }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1392,
+        400
+      ],
+      "id": "if-should-add-attendees",
+      "name": "Add attendees?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Process Event Data').first().json;\nconst existingAttendees = data.existingAttendees || [];\n\nconst toAdd = [\n  \"person1@company.com\",\n  \"person2@company.com\",\n  \"adeyinka.adeleke@yourcompany.com\"\n];\n\nconst existingEmails = new Set(\n  existingAttendees.map(a => (a.emailAddress?.address || '').toLowerCase())\n);\n\nconst newAttendees = toAdd\n  .filter(email => !existingEmails.has(email.toLowerCase()))\n  .map(email => ({ emailAddress: { address: email }, type: \"optional\" }));\n\nconst allAttendees = [...existingAttendees, ...newAttendees];\n\nreturn [{\n  json: {\n    accessToken: data.accessToken,\n    userEmail: data.userEmail,\n    encodedEventId: data.encodedEventId,\n    attendees: allAttendees\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        400
+      ],
+      "id": "2b54f904-8969-4207-a0df-f67089a61652",
+      "name": "Merge attendees"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://graph.microsoft.com/v1.0/users/{{ $json.userEmail }}/events/{{ $json.encodedEventId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"attendees\": {{ JSON.stringify($json.attendees) }},\n  \"hideAttendees\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1840,
+        400
+      ],
+      "id": "6c536fef-c01e-4daf-a8c4-326ad48546de",
+      "name": "Add attendees"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        64,
+        512
+      ],
+      "id": "27108a4a-0edc-4d9c-afeb-e7c161681550",
+      "name": "When clicking 'Execute workflow'"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "daysInterval": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        64,
+        704
+      ],
+      "id": "c782464b-186e-48f4-adf4-1798075be37d",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://login.microsoftonline.com/f4acf7a3-3986-4e90-8763-81b2528c92d6/oauth2/v2.0/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client_id",
+              "value": "5323a07a-dafe-4cbc-8449-745a24b05d0c"
+            },
+            {
+              "name": "client_secret",
+              "value": "[your-azure-client-secret]"
+            },
+            {
+              "name": "scope",
+              "value": "https://graph.microsoft.com/.default"
+            },
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        272,
+        704
+      ],
+      "id": "c433c3a7-4aa8-4b10-969c-0239e41d27af",
+      "name": "Get Token (Renewal)"
+    },
+    {
+      "parameters": {
+        "url": "https://graph.microsoft.com/v1.0/subscriptions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        704
+      ],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "GET Subscriptions"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json;\nconst allSubs = body.value || [];\nconst accessToken = $('Get Token (Renewal)').first().json.access_token;\n\nconst matching = allSubs.filter(sub =>\n  sub.notificationUrl && sub.notificationUrl.includes('microsoft-calendar')\n);\n\nif (matching.length === 0) {\n  return [{ json: { subscriptionId: null, nothingToDelete: true, accessToken: accessToken } }];\n}\n\nreturn matching.map(sub => ({\n  json: {\n    subscriptionId: sub.id,\n    nothingToDelete: false,\n    accessToken: accessToken\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        704
+      ],
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Filter calendar subscriptions"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://graph.microsoft.com/v1.0/subscriptions/{{ $json.subscriptionId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        896,
+        704
+      ],
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "DELETE Subscription",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Consolidate after deleting all old subs (or no subs). Emit single item.\nreturn [{ json: { ready: true } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        704
+      ],
+      "id": "d4e5f6a7-b8c9-0123-def0-234567890123",
+      "name": "Consolidate"
+    },
+    {
+      "parameters": {
+        "url": "https://graph.microsoft.com/v1.0/users?$filter=accountEnabled eq true&$select=mail,userPrincipalName,displayName&$top=999",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1312,
+        704
+      ],
+      "id": "get-all-users-node",
+      "name": "GET All Users"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all users from paginated results, filter to @yourcompany.com internal users\nconst items = $input.all();\nconst allUsers = [];\n\nfor (const item of items) {\n  const users = item.json.value || [item.json];\n  for (const u of users) {\n    const upn = (u.userPrincipalName || '').toLowerCase();\n    const mail = (u.mail || '').toLowerCase();\n    if (upn.endsWith('@yourcompany.com') && !upn.includes('#ext#')) {\n      allUsers.push({ email: mail || upn, displayName: u.displayName || '' });\n    }\n  }\n}\n\n// Ensure team@company.com is included\nconst hasTeam = allUsers.some(u => u.email === 'team@company.com');\nif (!hasTeam) {\n  allUsers.push({ email: 'team@company.com', displayName: 'YourCompany Team' });\n}\n\n// Deduplicate by email\nconst seen = new Set();\nconst unique = [];\nfor (const u of allUsers) {\n  if (!seen.has(u.email)) {\n    seen.add(u.email);\n    unique.push(u);\n  }\n}\n\nreturn unique.map(u => ({ json: { email: u.email, displayName: u.displayName } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        704
+      ],
+      "id": "filter-internal-users",
+      "name": "Filter Internal Users"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1728,
+        704
+      ],
+      "id": "split-users-batch",
+      "name": "Loop Users"
+    },
+    {
+      "parameters": {
+        "jsCode": "const email = $input.first().json.email;\n\nconst expirationDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);\nconst expirationDateTime = expirationDate.toISOString();\n\nreturn [{\n  json: {\n    changeType: \"created\",\n    notificationUrl: \"https://[your-n8n-domain]/webhook/microsoft-calendar\",\n    resource: \"users/\" + email + \"/events\",\n    expirationDateTime: expirationDateTime,\n    clientState: \"[your-webhook-secret]\"\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        704
+      ],
+      "id": "build-sub-body",
+      "name": "Build Sub Body"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.microsoft.com/v1.0/subscriptions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2144,
+        704
+      ],
+      "id": "create-sub-node",
+      "name": "Create Subscription",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "microsoft-calendar",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        32,
+        272
+      ],
+      "id": "f9ae373c-3660-4f86-afe7-d544492add9c",
+      "name": "Webhook1",
+      "webhookId": "0e006c0a-069e-4a0e-b0e2-e042e303c38a"
+    }
+  ],
+  "connections": {
+    "Validate & Extract User": {
+      "main": [
+        [
+          {
+            "node": "Get access token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get access token": {
+      "main": [
+        [
+          {
+            "node": "Get Event via Graph",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Event via Graph": {
+      "main": [
+        [
+          {
+            "node": "Process Event Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Event Data": {
+      "main": [
+        [
+          {
+            "node": "Has Teams URL?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Add attendees?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Teams URL?": {
+      "main": [
+        [
+          {
+            "node": "Get onlineMeeting",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get onlineMeeting": {
+      "main": [
+        [
+          {
+            "node": "Meeting found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meeting found?": {
+      "main": [
+        [
+          {
+            "node": "Set auto record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Add attendees?": {
+      "main": [
+        [
+          {
+            "node": "Merge attendees",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Merge attendees": {
+      "main": [
+        [
+          {
+            "node": "Add attendees",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Get Token (Renewal)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Token (Renewal)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Token (Renewal)": {
+      "main": [
+        [
+          {
+            "node": "GET Subscriptions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Subscriptions": {
+      "main": [
+        [
+          {
+            "node": "Filter calendar subscriptions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter calendar subscriptions": {
+      "main": [
+        [
+          {
+            "node": "DELETE Subscription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DELETE Subscription": {
+      "main": [
+        [
+          {
+            "node": "Consolidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate": {
+      "main": [
+        [
+          {
+            "node": "GET All Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET All Users": {
+      "main": [
+        [
+          {
+            "node": "Filter Internal Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Internal Users": {
+      "main": [
+        [
+          {
+            "node": "Loop Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Users": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Build Sub Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Sub Body": {
+      "main": [
+        [
+          {
+            "node": "Create Subscription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Subscription": {
+      "main": [
+        [
+          {
+            "node": "Loop Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Validate & Extract User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "binaryMode": "separate",
+    "timezone": "Europe/Berlin"
+  },
+  "staticData": {
+    "node:Schedule Trigger": {
+      "recurrenceRules": [
+        84
+      ]
+    }
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "68f653d9-b28b-4b83-9d9a-c7f6cbc9819d",
+  "activeVersionId": "68f653d9-b28b-4b83-9d9a-c7f6cbc9819d",
+  "versionCounter": 153,
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2025-11-13T06:55:04.810Z",
+      "createdAt": "2025-11-13T06:55:04.810Z",
+      "role": "workflow:owner",
+      "workflowId": "KXzejfck3kQ8o1jY",
+      "projectId": "1xouAt4QdWWhUWuM",
+      "project": {
+        "updatedAt": "2025-10-13T14:48:28.241Z",
+        "createdAt": "2025-10-13T14:47:21.362Z",
+        "id": "1xouAt4QdWWhUWuM",
+        "name": "Your Name <your-email@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-26T11:05:32.465Z",
+    "createdAt": "2026-03-26T11:05:32.465Z",
+    "versionId": "68f653d9-b28b-4b83-9d9a-c7f6cbc9819d",
+    "workflowId": "KXzejfck3kQ8o1jY",
+    "nodes": [
+      {
+        "parameters": {
+          "respondWith": "text",
+          "responseBody": "={{ $json.query.validationToken }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          272,
+          272
+        ],
+        "id": "a80d4a9a-e3aa-446c-921d-e3fce6a95c7a",
+        "name": "Respond to Webhook"
+      },
+      {
+        "parameters": {
+          "jsCode": "// If it's validation, stop here (already handled)\nif ($input.first().json.query?.validationToken) {\n  return [];\n}\n\n// Check the changeType - only process \"created\" events\nconst notification = $input.first().json.body?.value?.[0];\nconst changeType = notification?.changeType;\n\nif (changeType !== 'created') {\n  return [];\n}\n\n// Extract user ID and event ID from resource path\n// Format: \"Users/{GUID}/Events/{eventId}\" (capital U and E)\nconst resource = notification?.resource || '';\nconst match = resource.match(/^[Uu]sers\\/([^\\/]+)\\/[Ee]vents\\/(.+)$/);\n\nconst userId = match ? match[1] : '';\nconst eventId = match ? match[2] : (notification?.resourceData?.id || '');\n\nif (!userId || !eventId) {\n  return [];\n}\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    userEmail: userId,\n    eventResourceId: eventId\n  }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          496,
+          272
+        ],
+        "id": "447bd3c1-294b-46ed-8f58-ebf928401a2b",
+        "name": "Validate & Extract User"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://login.microsoftonline.com/f4acf7a3-3986-4e90-8763-81b2528c92d6/oauth2/v2.0/token",
+          "sendBody": true,
+          "contentType": "form-urlencoded",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "client_id",
+                "value": "5323a07a-dafe-4cbc-8449-745a24b05d0c"
+              },
+              {
+                "name": "client_secret",
+                "value": "[your-azure-client-secret]"
+              },
+              {
+                "name": "scope",
+                "value": "https://graph.microsoft.com/.default"
+              },
+              {
+                "name": "grant_type",
+                "value": "client_credentials"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          720,
+          272
+        ],
+        "id": "99885efb-0db6-4459-ace8-a02c0cb9eee0",
+        "name": "Get access token"
+      },
+      {
+        "parameters": {
+          "url": "=https://graph.microsoft.com/v1.0/users/{{ $('Validate & Extract User').first().json.userEmail }}/events/{{ $('Validate & Extract User').first().json.eventResourceId }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          944,
+          272
+        ],
+        "id": "7dcbf22c-8005-416a-98ae-a77827da2c4c",
+        "name": "Get Event via Graph",
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "jsCode": "const event = $('Get Event via Graph').first().json;\nconst userEmail = $('Validate & Extract User').first().json.userEmail;\nconst accessToken = $('Get access token').first().json.access_token;\nconst rawJoinUrl = event.onlineMeeting?.joinUrl;\n\nconst joinUrl = rawJoinUrl ? decodeURIComponent(rawJoinUrl) : '';\nconst isTeamEvent = userEmail.toLowerCase() === 'team@company.com';\n\nconst bodyContent = event.body?.content || '';\nconst isHubSpotMeeting = \n  bodyContent.includes('app.hubspot.com/meetings') &&\n  (bodyContent.includes('rescheduleId=') || bodyContent.includes('cancelId='));\n\nconst attendees = event.attendees || [];\nconst hasYour Name = attendees.some(a => a.emailAddress?.address === 'person1@company.com');\nconst hasAli = attendees.some(a => a.emailAddress?.address === 'person2@company.com');\nconst hasAde = attendees.some(a => a.emailAddress?.address === 'adeyinka.adeleke@yourcompany.com');\nconst allAttendeesPresent = hasYour Name && hasAli && hasAde;\n\nconst encodedEventId = encodeURIComponent(event.id || '');\n\nreturn [{\n  json: {\n    userEmail: userEmail,\n    accessToken: accessToken,\n    joinUrl: joinUrl,\n    hasJoinUrl: !!rawJoinUrl,\n    isTeamEvent: isTeamEvent,\n    isHubSpotMeeting: isHubSpotMeeting,\n    allAttendeesPresent: allAttendeesPresent,\n    shouldAddAttendees: isTeamEvent && isHubSpotMeeting && !allAttendeesPresent,\n    encodedEventId: encodedEventId,\n    existingAttendees: attendees\n  }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1168,
+          272
+        ],
+        "id": "befc030e-9d53-4e86-a48b-af644ac1cb6c",
+        "name": "Process Event Data"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "auto-record-check",
+                "leftValue": "={{ $json.hasJoinUrl }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1392,
+          176
+        ],
+        "id": "if-has-join-url",
+        "name": "Has Teams URL?"
+      },
+      {
+        "parameters": {
+          "url": "=https://graph.microsoft.com/v1.0/users/{{ $json.userEmail }}/onlineMeetings",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "$filter",
+                "value": "=joinWebUrl eq '{{ $json.joinUrl }}'"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1616,
+          176
+        ],
+        "id": "cc000002-cc00-cc00-cc00-cc0000000002",
+        "name": "Get onlineMeeting",
+        "continueOnFail": true
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "meeting-found-check",
+                "leftValue": "={{ ($json.value || []).length }}",
+                "rightValue": 0,
+                "operator": {
+                  "type": "number",
+                  "operation": "gt"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1840,
+          176
+        ],
+        "id": "if-meeting-found",
+        "name": "Meeting found?"
+      },
+      {
+        "parameters": {
+          "method": "PATCH",
+          "url": "=https://graph.microsoft.com/v1.0/users/{{ $('Process Event Data').first().json.userEmail }}/onlineMeetings/{{ $json.value[0].id }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{ \"recordAutomatically\": true }",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2064,
+          176
+        ],
+        "id": "cc000003-cc00-cc00-cc00-cc0000000003",
+        "name": "Set auto record",
+        "continueOnFail": true
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "attendee-check",
+                "leftValue": "={{ $json.shouldAddAttendees }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1392,
+          400
+        ],
+        "id": "if-should-add-attendees",
+        "name": "Add attendees?"
+      },
+      {
+        "parameters": {
+          "jsCode": "const data = $('Process Event Data').first().json;\nconst existingAttendees = data.existingAttendees || [];\n\nconst toAdd = [\n  \"person1@company.com\",\n  \"person2@company.com\",\n  \"adeyinka.adeleke@yourcompany.com\"\n];\n\nconst existingEmails = new Set(\n  existingAttendees.map(a => (a.emailAddress?.address || '').toLowerCase())\n);\n\nconst newAttendees = toAdd\n  .filter(email => !existingEmails.has(email.toLowerCase()))\n  .map(email => ({ emailAddress: { address: email }, type: \"optional\" }));\n\nconst allAttendees = [...existingAttendees, ...newAttendees];\n\nreturn [{\n  json: {\n    accessToken: data.accessToken,\n    userEmail: data.userEmail,\n    encodedEventId: data.encodedEventId,\n    attendees: allAttendees\n  }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1616,
+          400
+        ],
+        "id": "2b54f904-8969-4207-a0df-f67089a61652",
+        "name": "Merge attendees"
+      },
+      {
+        "parameters": {
+          "method": "PATCH",
+          "url": "=https://graph.microsoft.com/v1.0/users/{{ $json.userEmail }}/events/{{ $json.encodedEventId }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"attendees\": {{ JSON.stringify($json.attendees) }},\n  \"hideAttendees\": true\n}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1840,
+          400
+        ],
+        "id": "6c536fef-c01e-4daf-a8c4-326ad48546de",
+        "name": "Add attendees"
+      },
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          64,
+          512
+        ],
+        "id": "27108a4a-0edc-4d9c-afeb-e7c161681550",
+        "name": "When clicking 'Execute workflow'"
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "daysInterval": 2
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          64,
+          704
+        ],
+        "id": "c782464b-186e-48f4-adf4-1798075be37d",
+        "name": "Schedule Trigger"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://login.microsoftonline.com/f4acf7a3-3986-4e90-8763-81b2528c92d6/oauth2/v2.0/token",
+          "sendBody": true,
+          "contentType": "form-urlencoded",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "client_id",
+                "value": "5323a07a-dafe-4cbc-8449-745a24b05d0c"
+              },
+              {
+                "name": "client_secret",
+                "value": "[your-azure-client-secret]"
+              },
+              {
+                "name": "scope",
+                "value": "https://graph.microsoft.com/.default"
+              },
+              {
+                "name": "grant_type",
+                "value": "client_credentials"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          272,
+          704
+        ],
+        "id": "c433c3a7-4aa8-4b10-969c-0239e41d27af",
+        "name": "Get Token (Renewal)"
+      },
+      {
+        "parameters": {
+          "url": "https://graph.microsoft.com/v1.0/subscriptions",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          480,
+          704
+        ],
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "name": "GET Subscriptions"
+      },
+      {
+        "parameters": {
+          "jsCode": "const body = $input.first().json;\nconst allSubs = body.value || [];\nconst accessToken = $('Get Token (Renewal)').first().json.access_token;\n\nconst matching = allSubs.filter(sub =>\n  sub.notificationUrl && sub.notificationUrl.includes('microsoft-calendar')\n);\n\nif (matching.length === 0) {\n  return [{ json: { subscriptionId: null, nothingToDelete: true, accessToken: accessToken } }];\n}\n\nreturn matching.map(sub => ({\n  json: {\n    subscriptionId: sub.id,\n    nothingToDelete: false,\n    accessToken: accessToken\n  }\n}));"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          688,
+          704
+        ],
+        "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+        "name": "Filter calendar subscriptions"
+      },
+      {
+        "parameters": {
+          "method": "DELETE",
+          "url": "=https://graph.microsoft.com/v1.0/subscriptions/{{ $json.subscriptionId }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          896,
+          704
+        ],
+        "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+        "name": "DELETE Subscription",
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Consolidate after deleting all old subs (or no subs). Emit single item.\nreturn [{ json: { ready: true } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1104,
+          704
+        ],
+        "id": "d4e5f6a7-b8c9-0123-def0-234567890123",
+        "name": "Consolidate"
+      },
+      {
+        "parameters": {
+          "url": "https://graph.microsoft.com/v1.0/users?$filter=accountEnabled eq true&$select=mail,userPrincipalName,displayName&$top=999",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1312,
+          704
+        ],
+        "id": "get-all-users-node",
+        "name": "GET All Users"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Get all users from paginated results, filter to @yourcompany.com internal users\nconst items = $input.all();\nconst allUsers = [];\n\nfor (const item of items) {\n  const users = item.json.value || [item.json];\n  for (const u of users) {\n    const upn = (u.userPrincipalName || '').toLowerCase();\n    const mail = (u.mail || '').toLowerCase();\n    if (upn.endsWith('@yourcompany.com') && !upn.includes('#ext#')) {\n      allUsers.push({ email: mail || upn, displayName: u.displayName || '' });\n    }\n  }\n}\n\n// Ensure team@company.com is included\nconst hasTeam = allUsers.some(u => u.email === 'team@company.com');\nif (!hasTeam) {\n  allUsers.push({ email: 'team@company.com', displayName: 'YourCompany Team' });\n}\n\n// Deduplicate by email\nconst seen = new Set();\nconst unique = [];\nfor (const u of allUsers) {\n  if (!seen.has(u.email)) {\n    seen.add(u.email);\n    unique.push(u);\n  }\n}\n\nreturn unique.map(u => ({ json: { email: u.email, displayName: u.displayName } }));"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1520,
+          704
+        ],
+        "id": "filter-internal-users",
+        "name": "Filter Internal Users"
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitInBatches",
+        "typeVersion": 3,
+        "position": [
+          1728,
+          704
+        ],
+        "id": "split-users-batch",
+        "name": "Loop Users"
+      },
+      {
+        "parameters": {
+          "jsCode": "const email = $input.first().json.email;\n\nconst expirationDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);\nconst expirationDateTime = expirationDate.toISOString();\n\nreturn [{\n  json: {\n    changeType: \"created\",\n    notificationUrl: \"https://[your-n8n-domain]/webhook/microsoft-calendar\",\n    resource: \"users/\" + email + \"/events\",\n    expirationDateTime: expirationDateTime,\n    clientState: \"[your-webhook-secret]\"\n  }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1936,
+          704
+        ],
+        "id": "build-sub-body",
+        "name": "Build Sub Body"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://graph.microsoft.com/v1.0/subscriptions",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify($json) }}",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2144,
+          704
+        ],
+        "id": "create-sub-node",
+        "name": "Create Subscription",
+        "continueOnFail": true
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "microsoft-calendar",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          32,
+          272
+        ],
+        "id": "f9ae373c-3660-4f86-afe7-d544492add9c",
+        "name": "Webhook1",
+        "webhookId": "0e006c0a-069e-4a0e-b0e2-e042e303c38a"
+      }
+    ],
+    "connections": {
+      "Validate & Extract User": {
+        "main": [
+          [
+            {
+              "node": "Get access token",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get access token": {
+        "main": [
+          [
+            {
+              "node": "Get Event via Graph",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Event via Graph": {
+        "main": [
+          [
+            {
+              "node": "Process Event Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Process Event Data": {
+        "main": [
+          [
+            {
+              "node": "Has Teams URL?",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Add attendees?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Has Teams URL?": {
+        "main": [
+          [
+            {
+              "node": "Get onlineMeeting",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Get onlineMeeting": {
+        "main": [
+          [
+            {
+              "node": "Meeting found?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Meeting found?": {
+        "main": [
+          [
+            {
+              "node": "Set auto record",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Add attendees?": {
+        "main": [
+          [
+            {
+              "node": "Merge attendees",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Merge attendees": {
+        "main": [
+          [
+            {
+              "node": "Add attendees",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "When clicking 'Execute workflow'": {
+        "main": [
+          [
+            {
+              "node": "Get Token (Renewal)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Schedule Trigger": {
+        "main": [
+          [
+            {
+              "node": "Get Token (Renewal)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Token (Renewal)": {
+        "main": [
+          [
+            {
+              "node": "GET Subscriptions",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "GET Subscriptions": {
+        "main": [
+          [
+            {
+              "node": "Filter calendar subscriptions",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Filter calendar subscriptions": {
+        "main": [
+          [
+            {
+              "node": "DELETE Subscription",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "DELETE Subscription": {
+        "main": [
+          [
+            {
+              "node": "Consolidate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Consolidate": {
+        "main": [
+          [
+            {
+              "node": "GET All Users",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "GET All Users": {
+        "main": [
+          [
+            {
+              "node": "Filter Internal Users",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Filter Internal Users": {
+        "main": [
+          [
+            {
+              "node": "Loop Users",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Loop Users": {
+        "main": [
+          [],
+          [
+            {
+              "node": "Build Sub Body",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Sub Body": {
+        "main": [
+          [
+            {
+              "node": "Create Subscription",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create Subscription": {
+        "main": [
+          [
+            {
+              "node": "Loop Users",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook1": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Validate & Extract User",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Your Name",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-26T11:05:32.575Z",
+        "id": 354,
+        "workflowId": "KXzejfck3kQ8o1jY",
+        "versionId": "68f653d9-b28b-4b83-9d9a-c7f6cbc9819d",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      },
+      {
+        "createdAt": "2026-03-26T11:05:32.530Z",
+        "id": 353,
+        "workflowId": "KXzejfck3kQ8o1jY",
+        "versionId": "68f653d9-b28b-4b83-9d9a-c7f6cbc9819d",
+        "event": "deactivated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    ]
+  }
+}

@@ -1,0 +1,3478 @@
+{
+  "updatedAt": "2026-03-17T09:34:52.400Z",
+  "createdAt": "2026-02-12T15:12:50.669Z",
+  "id": "nE7KIYDBA84ra6CJLPvWm",
+  "name": "YourCompany: Proposal Signed > Send Invoices",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "eventsUi": {
+          "eventValues": [
+            {
+              "name": "deal.propertyChange",
+              "property": "dealstage"
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "id": "6cbfffb7-0aa9-427a-a9c1-d8ba3cafe34c",
+      "name": "HubSpot Trigger",
+      "type": "n8n-nodes-base.hubspotTrigger",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        128
+      ],
+      "webhookId": "33e4c331-edc3-409d-b7c5-f6d3461bbc3d",
+      "credentials": {
+        "hubspotDeveloperApi": {
+          "id": "wEPpNnDI5nSwDuVI",
+          "name": "YourCompany: HubSpot Developer account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5ad8ebb7-81ad-4682-a557-e57b11f5597b",
+              "name": "SlackChannel",
+              "value": "[slack-channel-id]",
+              "type": "string"
+            },
+            {
+              "id": "1dbef840-adf1-41d3-b9fd-cab325ac5683",
+              "name": "XeroTenant",
+              "value": "72954cc8-ba90-4a36-94b2-498d3e264eb6",
+              "type": "string"
+            },
+            {
+              "id": "23842764-beb1-4a9e-95c3-ce238e216ce8",
+              "name": "XeroURL",
+              "value": "!4xn9q",
+              "type": "string"
+            },
+            {
+              "id": "98e8dfe6-894f-48d1-bb53-a91eb6a7ab17",
+              "name": "SlackDrata",
+              "value": "[slack-channel-id]",
+              "type": "string"
+            },
+            {
+              "id": "20f913f7-f728-4b64-976b-83c7ae7a41ed",
+              "name": "SlackAccounts",
+              "value": "U09HLUH7EFN",
+              "type": "string"
+            },
+            {
+              "id": "f649ab24-9a69-4901-a882-3f5f72aa1a78",
+              "name": "XeroProd",
+              "value": "72954cc8-ba90-4a36-94b2-498d3e264eb6",
+              "type": "string"
+            },
+            {
+              "id": "1e967440-df81-4393-99b5-02912dece193",
+              "name": "XeroTests",
+              "value": "ca846fde-e982-4071-934f-2c47f2b08a8e",
+              "type": "string"
+            },
+            {
+              "id": "1a5a6fe7-5136-4832-bc80-35c23b198fcc",
+              "name": "SlackTests",
+              "value": "[slack-channel-id]",
+              "type": "string"
+            },
+            {
+              "id": "6f139b53-a0fe-4040-87ad-f4545fae3505",
+              "name": "SlackProd",
+              "value": "[slack-channel-id]",
+              "type": "string"
+            },
+            {
+              "id": "7bc69cff-95d3-4e2e-9e4e-345cd6f70f9f",
+              "name": "XeroURLtests",
+              "value": "!6XPrS",
+              "type": "string"
+            },
+            {
+              "id": "e9893334-9873-416d-8eb0-8d42e0a4cd05",
+              "name": "XeroURLprod",
+              "value": "!4xn9q",
+              "type": "string"
+            },
+            {
+              "id": "a1e44948-0824-44b9-8a2f-7c156c82059e",
+              "name": "Slack Drata",
+              "value": "[slack-channel-id]",
+              "type": "string"
+            },
+            {
+              "id": "c9ac7372-1e9d-42d6-99c8-db1e3a833165",
+              "name": "Slack Accounts",
+              "value": "U09HLUH7EFN",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cefe36ca-41b2-45c5-8022-415c4afe778f",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -208,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "deal",
+        "operation": "get",
+        "dealId": {
+          "__rl": true,
+          "value": "={{ $('HubSpot Trigger').first().json.dealId }}",
+          "mode": "id"
+        },
+        "filters": {
+          "propertiesCollection": {
+            "propertiesValues": {
+              "properties": [
+                "dealname",
+                "dealstage",
+                "amount",
+                "qwilr_proposal",
+                "partner",
+                "engagement",
+                "framework",
+                "qwilr_template",
+                "hs_num_of_associated_line_items"
+              ],
+              "propertyMode": "valueOnly"
+            }
+          }
+        }
+      },
+      "id": "7d80b458-4c18-4979-a1db-c7d94aab8c67",
+      "name": "Hubspot: Get deal",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        -32,
+        128
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "66b68b1b-c828-4d8a-a6f3-081059076aa0",
+              "leftValue": "={{ $('Hubspot: Get deal').item.json.properties.dealname.value }}",
+              "rightValue": "TEST DEAL TEMP",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f19d2c02-e374-4750-baa6-2462d1b33c88",
+      "name": "Is test?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        192,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8cb95adb-6176-4c92-8f97-2fac1cf29065",
+              "leftValue": "={{ $('Hubspot: Get deal').item.json.properties.dealstage.value }}",
+              "rightValue": "266058586",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "709b2e27-776d-499b-8e85-cd6c7ede1e8c",
+              "leftValue": "={{ $('Hubspot: Get deal').item.json.properties.dealstage.value }}",
+              "rightValue": "1211728151",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "f7f2788c-37e3-49bf-b1d7-90a409591842",
+      "name": "If: stage is proposal signed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hubapi.com/crm/v4/objects/deals/{{ $('Hubspot: Get deal').item.json.dealId }}/associations/line_items",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "options": {}
+      },
+      "id": "d1521a77-f5e9-426f-9433-8b2ccd5034cb",
+      "name": "Hubspot: Get line item IDs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        864,
+        432
+      ],
+      "credentials": {
+        "hubspotApi": {
+          "id": "xA7Cv3rdLZvRM07y",
+          "name": "HubSpot account"
+        },
+        "hubspotDeveloperApi": {
+          "id": "wEPpNnDI5nSwDuVI",
+          "name": "YourCompany: HubSpot Developer account"
+        },
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare batch request body for HubSpot line items\nconst associations = $input.item.json.results;\nreturn [{ json: {\n  properties: [\"name\",\"quantity\",\"price\",\"amount\",\"hs_product_id\",\"hs_sku\",\"xero_account\",\"payment_terms\",\"recurringbillingfrequency\",\"hs_total_discount\"],\n  inputs: associations.map(item => ({ id: item.toObjectId.toString() }))\n}}];\n"
+      },
+      "id": "279c22b4-0d63-4423-ac4c-9969db87f76a",
+      "name": "Code: Prepare line item batch request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1088,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.hubspot.com/crm/v3/objects/line_items/batch/read",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "ae7c41c4-a61e-4ea8-8ad5-1bf6f9829dd0",
+      "name": "Hubspot: Get line items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1312,
+        432
+      ],
+      "credentials": {
+        "hubspotApi": {
+          "id": "xA7Cv3rdLZvRM07y",
+          "name": "HubSpot account"
+        },
+        "hubspotDeveloperApi": {
+          "id": "wEPpNnDI5nSwDuVI",
+          "name": "YourCompany: HubSpot Developer account"
+        },
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate line items and split into invoice buckets\nconst response = $input.item.json;\n\n// HubSpot batch read wraps results in an outer array\nconst lineItems = Array.isArray(response)\n  ? response[0].results\n  : (response.results || []);\n\nconst errors = [];\nconst invoice1Items = [];\nconst invoice2Items = [];\nconst recurringMonthlyItems = [];\n\nif (lineItems.length === 0) {\n  return [{ json: {\n    hasErrors: true,\n    errorSummary: \"Deal has no line items. Please add products to the deal before closing.\",\n    errors: []\n  }}];\n}\n\nlineItems.forEach((item, index) => {\n  const props = item.properties;\n  const name = props.name || `Line item #${index + 1}`;\n  const paymentTerms = props.payment_terms || '';\n  const billingFrequency = (props.recurringbillingfrequency || '').toLowerCase();\n  const quantity = parseFloat(props.quantity) || 0;\n  const sku = props.hs_sku || '';\n  const unitPrice = parseFloat(props.price) || 0;\n  const discount = parseFloat(props.hs_total_discount) || 0;\n  const accountCode = props.xero_account ? String(props.xero_account).padStart(2, '0') : '';\n  const itemErrors = [];\n\n  if (!props.name)     itemErrors.push(\"Missing name\");\n  if (!paymentTerms)   itemErrors.push(\"Missing payment terms\");\n  if (quantity === 0)  itemErrors.push(\"Quantity is 0\");\n  if (!sku)            itemErrors.push(\"Missing SKU - cannot sync with Xero catalog\");\n  if (unitPrice === 0) itemErrors.push(\"Price is $0\");\n  if (!accountCode)    itemErrors.push(\"Missing Xero account code\");\n\n  const validTerms = ['50/50', '100%', 'Recurring'];\n  if (paymentTerms && !validTerms.includes(paymentTerms))\n    itemErrors.push(`Invalid payment terms: \"${paymentTerms}\" (must be \"50/50\", \"100%\", or \"Recurring\")`);\n\n  if (paymentTerms === 'Recurring' && !['monthly', 'annually'].includes(billingFrequency))\n    itemErrors.push(`Invalid billing frequency: \"${props.recurringbillingfrequency}\" (must be \"Monthly\" or \"Annually\")`);\n\n  if (itemErrors.length > 0) {\n    errors.push({ productName: name, issues: itemErrors });\n    return;\n  }\n\n  const baseItem = {\n    ItemCode: sku,\n    AccountCode: accountCode,\n    Quantity: quantity,\n    UnitAmount: unitPrice,\n    DiscountAmount: discount > 0 ? discount : 0,\n    TaxType: \"NONE\"\n  };\n\n  if (paymentTerms === '50/50') {\n    invoice1Items.push({\n      ...baseItem,\n      Quantity: quantity * 0.5,\n      DiscountAmount: discount > 0 ? parseFloat((discount * 0.5).toFixed(2)) : 0,\n      Description: name + ' (Payment 1/2)'\n    });\n    invoice2Items.push({\n      ...baseItem,\n      Quantity: quantity * 0.5,\n      DiscountAmount: discount > 0 ? parseFloat((discount * 0.5).toFixed(2)) : 0,\n      Description: name + ' (Payment 2/2)'\n    });\n  } else if (paymentTerms === '100%') {\n    invoice2Items.push({ ...baseItem, Description: name });\n\n  } else if (paymentTerms === 'Recurring' && billingFrequency === 'annually') {\n    invoice1Items.push({ ...baseItem, Description: name + ' (Annual)' });\n\n  } else if (paymentTerms === 'Recurring' && billingFrequency === 'monthly') {\n    recurringMonthlyItems.push({ ...baseItem, Description: name + ' (Monthly)' });\n  }\n});\n\nconst errorSummary = errors.length > 0\n  ? errors.map(e => `Product: ${e.productName}\\nIssues: ${e.issues.join(', ')}`).join('\\n\\n')\n  : '';\n\nreturn [{ json: {\n  invoice1Items,\n  invoice2Items,\n  recurringMonthlyItems,\n  hasErrors: errors.length > 0,\n  errorSummary,\n  errors\n}}];\n"
+      },
+      "id": "4f94c012-bf7e-4c1b-bb03-83b52ab5e1ef",
+      "name": "Code: Validate line items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4e088f4a-f5f9-45c6-b74b-fec28300f68f",
+              "leftValue": "={{ $json.hasErrors }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2cf65c31-d936-4a20-8ff8-b241c3970d57",
+      "name": "If: Line items valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1760,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "operation": "get",
+        "contactId": {
+          "__rl": true,
+          "value": "={{ $('Hubspot: Get deal').item.json.associations.associatedVids[0] }}",
+          "mode": "id"
+        },
+        "additionalFields": {}
+      },
+      "id": "8f137819-ac9b-42f4-b082-c1f874e8f022",
+      "name": "Hubspot: Get contact",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        1296,
+        -208
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6c96a4cd-f23a-404f-8b2f-a774f943571a",
+              "leftValue": "={{ $('Hubspot: Get deal').item.json.associations.associatedVids }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "439d5f39-bbf1-434a-aca9-5694ff810802",
+      "name": "If: Contact associated?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1072,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.xero.com/api.xro/2.0/Contacts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "xeroOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "where",
+              "value": "=EmailAddress==\"{{ $('Hubspot: Get contact').item.json.properties.email.value }}\""
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xero-tenant-id",
+              "value": "={{ $('Config').item.json.XeroTenant }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "932c3d33-c5e2-424a-a1c0-09e1beceae9f",
+      "name": "Xero: Get contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1520,
+        -208
+      ],
+      "credentials": {
+        "xeroOAuth2Api": {
+          "id": "jskZTvJLa8LuOxrd",
+          "name": "YourCompany: Xero account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "62698c9f-8f1f-41f7-a885-3065d65ff118",
+              "leftValue": "={{ $json.Contacts }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c8928d72-07b2-4a87-a373-2495d8e5e281",
+      "name": "If: Xero contact found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1744,
+        -208
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "4a25f835-b3ff-47c3-bd1a-13bce08fe543",
+      "name": "Merge: Line items + Contact ready",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        2176,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare Xero invoice payloads from merged line item + contact data\nconst invoice1Items         = $('Code: Validate line items').first().json.invoice1Items;\nconst invoice2Items         = $('Code: Validate line items').first().json.invoice2Items;\nconst recurringMonthlyItems = $('Code: Validate line items').first().json.recurringMonthlyItems;\nconst contactID             = $('Xero: Get contact').first().json.Contacts[0].ContactID;\nconst dealName              = $('Hubspot: Get deal').first().json.properties.dealname.value;\n\nconst now = new Date();\nconst addDays = (base, days) => {\n  const d = new Date(base);\n  d.setDate(d.getDate() + days);\n  return d.toISOString().split('T')[0];\n};\nconst addMonths = (base, months) => {\n  const d = new Date(base);\n  d.setMonth(d.getMonth() + months);\n  return d.toISOString().split('T')[0];\n};\n\nconst has1 = invoice1Items.length > 0;\nconst has2 = invoice2Items.length > 0;\nconst invoices = [];\n\n// If only invoice2Items exist (all 100% items), treat as a single invoice with no split suffix\nif (!has1 && has2) {\n  invoices.push({ json: {\n    Type: \"ACCREC\",\n    Contact: { ContactID: contactID },\n    LineItems: invoice2Items,\n    Date: now.toISOString().split('T')[0],\n    DueDate: addDays(now, 7),\n    Status: \"DRAFT\",\n    Reference: dealName\n  }});\n} else {\n  // Invoice 1: 50/50 first halves + annual recurring\n  if (has1) {\n    invoices.push({ json: {\n      Type: \"ACCREC\",\n      Contact: { ContactID: contactID },\n      LineItems: invoice1Items,\n      Date: now.toISOString().split('T')[0],\n      DueDate: addDays(now, 7),\n      Status: \"DRAFT\",\n      Reference: `${dealName} - Invoice 1`\n    }});\n  }\n\n  // Invoice 2: 50/50 second halves + 100% items\n  if (has2) {\n    const date2 = addDays(now, 14);\n    invoices.push({ json: {\n      Type: \"ACCREC\",\n      Contact: { ContactID: contactID },\n      LineItems: invoice2Items,\n      Date: date2,\n      DueDate: addDays(now, 21),\n      Status: \"DRAFT\",\n      Reference: `${dealName} - Invoice 2`\n    }});\n  }\n}\n\n// Monthly recurring: 12 invoices, one per month\nif (recurringMonthlyItems.length > 0) {\n  for (let i = 0; i < 12; i++) {\n    const invoiceDate = addMonths(now, i);\n    invoices.push({ json: {\n      Type: \"ACCREC\",\n      Contact: { ContactID: contactID },\n      LineItems: recurringMonthlyItems,\n      Date: invoiceDate,\n      DueDate: addDays(new Date(invoiceDate), 7),\n      Status: \"DRAFT\",\n      Reference: `${dealName} - Monthly ${i + 1}/12`\n    }});\n  }\n}\n\nreturn invoices;\n"
+      },
+      "id": "36f6e93b-9151-48da-a929-9ce1fa1965ba",
+      "name": "Code: Prepare invoices",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.xero.com/api.xro/2.0/Invoices",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "xeroOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xero-tenant-id",
+              "value": "={{ $('Config').first().json.XeroTenant }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "Type",
+              "value": "={{ $json.Type }}"
+            },
+            {
+              "name": "Contact",
+              "value": "={{ $json.Contact }}"
+            },
+            {
+              "name": "LineItems",
+              "value": "={{ $json.LineItems }}"
+            },
+            {
+              "name": "Date",
+              "value": "={{ $json.Date }}"
+            },
+            {
+              "name": "DueDate",
+              "value": "={{ $json.DueDate }}"
+            },
+            {
+              "name": "Status",
+              "value": "={{ $json.Status }}"
+            },
+            {
+              "name": "Reference",
+              "value": "={{ $json.Reference }}"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1
+            }
+          }
+        }
+      },
+      "id": "54f7a970-c3d8-40a7-9d9e-668777e9ec0e",
+      "name": "Xero: Create invoice(s)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2624,
+        -144
+      ],
+      "credentials": {
+        "xeroOAuth2Api": {
+          "id": "jskZTvJLa8LuOxrd",
+          "name": "YourCompany: Xero account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format Xero invoice details for Slack + Email notification\nconst invoicesData = $input.all();\nconst xeroURL = $('Config').first().json.XeroURL;\nconst baseUrl = `https://go.xero.com/app/${xeroURL}/invoicing/edit/`;\n\nconst allInvoices = [];\ninvoicesData.forEach(item => {\n  if (item.json.Invoices && item.json.Invoices.length > 0)\n    allInvoices.push(...item.json.Invoices);\n});\n\nconst contact      = allInvoices[0].Contact;\nconst contactName  = contact.Name;\nconst contactEmail = contact.EmailAddress;\nconst totalAmount  = allInvoices.reduce((sum, inv) => sum + inv.Total, 0);\n\nconst formatCurrency = (n) =>\n  `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;\n\nconst formatDate = (s) =>\n  new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });\n\nlet slackMessage = '';\nlet emailMessage = '';\n\n// 1 invoice, 1 product\nif (allInvoices.length === 1 && allInvoices[0].LineItems.length === 1) {\n  const inv = allInvoices[0];\n  const li  = inv.LineItems[0];\n  const url = `${baseUrl}${inv.InvoiceID}`;\n\n  slackMessage  = `Invoice ${inv.InvoiceNumber} created for ${contactName} (${contactEmail}) for ${formatCurrency(inv.Total)}: ${li.Description}\\n\\n`;\n  slackMessage += `<${url}|Check and approve draft>`;\n\n  emailMessage  = `Invoice ${inv.InvoiceNumber} created for ${contactName} (${contactEmail}) for ${formatCurrency(inv.Total)}: ${li.Description}\\n\\n`;\n  emailMessage += `Check and approve draft: ${url}`;\n}\n// 1 invoice, 2+ products\nelse if (allInvoices.length === 1) {\n  const inv = allInvoices[0];\n  const url = `${baseUrl}${inv.InvoiceID}`;\n\n  slackMessage  = `Invoice ${inv.InvoiceNumber} created for ${contactName} (${contactEmail}) for ${formatCurrency(inv.Total)} as follows:\\n`;\n  emailMessage  = `Invoice ${inv.InvoiceNumber} created for ${contactName} (${contactEmail}) for ${formatCurrency(inv.Total)} as follows:\\n`;\n\n  inv.LineItems.forEach((li, i) => {\n    slackMessage += `${i+1}. ${li.Quantity}x ${li.Description}\\n`;\n    emailMessage += `${i+1}. ${li.Quantity}x ${li.Description}\\n`;\n  });\n\n  slackMessage += `\\n<${url}|Check and approve draft>`;\n  emailMessage += `\\nCheck and approve draft: ${url}`;\n}\n// 2+ invoices\nelse {\n  slackMessage  = `Invoices created for ${contactName} (${contactEmail}) for ${formatCurrency(totalAmount)} as follows:\\n`;\n  emailMessage  = `Invoices created for ${contactName} (${contactEmail}) for ${formatCurrency(totalAmount)} as follows:\\n`;\n\n  allInvoices.forEach(inv => {\n    const url     = `${baseUrl}${inv.InvoiceID}`;\n    const dueDate = formatDate(inv.DueDateString);\n\n    if (inv.LineItems.length === 1) {\n      const li       = inv.LineItems[0];\n      const discount = li.UnitAmount * li.Quantity - li.LineAmount;\n      const discText = discount > 0 ? ` (-${formatCurrency(discount)})` : '';\n\n      slackMessage += `*<${url}|Invoice ${inv.InvoiceNumber}> (due ${dueDate}):*\\n`;\n      slackMessage += `          ${li.Quantity}x ${li.Description}${discText} = ${formatCurrency(li.LineAmount)}\\n`;\n\n      emailMessage += `Invoice ${inv.InvoiceNumber} (due ${dueDate}):\\n`;\n      emailMessage += `  ${li.Quantity}x ${li.Description}${discText} = ${formatCurrency(li.LineAmount)}\\n`;\n      emailMessage += `  ${url}\\n`;\n    } else {\n      slackMessage += `*<${url}|Invoice ${inv.InvoiceNumber}> (due ${dueDate}) for ${formatCurrency(inv.Total)}:*\\n`;\n      emailMessage += `Invoice ${inv.InvoiceNumber} (due ${dueDate}) for ${formatCurrency(inv.Total)}:\\n`;\n      emailMessage += `  ${url}\\n`;\n\n      inv.LineItems.forEach(li => {\n        const discount = li.UnitAmount * li.Quantity - li.LineAmount;\n        const discText = discount > 0 ? ` (-${formatCurrency(discount)})` : '';\n        slackMessage += `          ${li.Quantity}x ${li.Description}${discText} = ${formatCurrency(li.LineAmount)}\\n`;\n        emailMessage += `  ${li.Quantity}x ${li.Description}${discText} = ${formatCurrency(li.LineAmount)}\\n`;\n      });\n    }\n  });\n\n  if (allInvoices.length === 2) {\n    slackMessage += `\\nCheck and approve draft of first invoice ${allInvoices[0].InvoiceNumber} on Xero. The second invoice should be approved and sent once the project is completed.`;\n    emailMessage += `\\nCheck and approve draft of first invoice ${allInvoices[0].InvoiceNumber} on Xero. The second invoice should be approved and sent once the project is completed.`;\n  } else {\n    slackMessage += `\\nCheck and approve draft on Xero by clicking the hyperlinked invoice line above.`;\n    emailMessage += `\\nCheck and approve draft on Xero using the links above.`;\n  }\n}\n\nreturn { json: { slackMessage, emailMessage, contactName, contactEmail, totalAmount, invoiceCount: allInvoices.length }};\n"
+      },
+      "id": "d542c1c2-3f96-42db-b900-ab16be057cbd",
+      "name": "Code: Format Slack invoice message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2848,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SlackChannel }}",
+          "mode": "id"
+        },
+        "text": "={{ $json.slackMessage }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "thread_ts": {
+            "replyValues": {
+              "thread_ts": "={{ $('Slack: Deal won').first().json.message_timestamp }}"
+            }
+          }
+        }
+      },
+      "id": "20874385-4f4b-4b48-a161-66a8d9c0ce73",
+      "name": "Slack: Invoices",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2176,
+        64
+      ],
+      "webhookId": "07e52755-8323-4cbe-892c-2d86e72a7a65",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U09HLUH7EFN",
+          "mode": "list",
+          "cachedResultName": "accounts"
+        },
+        "text": "=Proposal: {{ $('Hubspot: Get deal').first().json.properties.qwilr_proposal.value }}\n\n{{ $('Code: Format Slack invoice message').item.json.slackMessage }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "6fd07704-6965-4ccc-8e18-61fc0157096f",
+      "name": "Slack: Invoices to accounting",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2400,
+        64
+      ],
+      "webhookId": "07e52755-8323-4cbe-892c-2d86e72a7a65",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SlackChannel }}",
+          "mode": "id"
+        },
+        "text": "={{ $('Hubspot: Get deal').item.json.properties.dealname.value }} signed the proposal for ${{ $('Hubspot: Get deal').item.json.properties.hs_forecast_amount.value }}\n\n<https://app.hubspot.com/contacts/[hubspot-portal-id]/record/0-3/{{ $('HubSpot Trigger').item.json.dealId }}|See deal on HubSpot>",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "128c7f96-bfea-48fc-b26f-466890af849b",
+      "name": "Slack: Deal won",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1072,
+        -240
+      ],
+      "webhookId": "07e52755-8323-4cbe-892c-2d86e72a7a65",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SlackChannel }}",
+          "mode": "id"
+        },
+        "text": "=\u274c Failed to create invoices for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\"\n{{ $('Code: Validate line items').first().json.errorSummary }}\n\nPlease fix these issues in HubSpot and either re-close the deal or create the invoice manually.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "thread_ts": {
+            "replyValues": {
+              "thread_ts": "={{ $('Slack: Deal won').first().json.message_timestamp }}"
+            }
+          }
+        }
+      },
+      "id": "0033673d-cbe5-4996-a5b8-a631d17c44e2",
+      "name": "Slack: Error - invalid line items",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1984,
+        480
+      ],
+      "webhookId": "4eb8fd6e-7434-41d6-abdc-cdc47b163184",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U09HLUH7EFN",
+          "mode": "list",
+          "cachedResultName": "accounts"
+        },
+        "text": "=\u274c *Failed to create invoices for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\"*\n\nProposal: {{ $('Hubspot: Get deal').first().json.properties.qwilr_proposal.value }}\n\nPlease create invoice(s) manually.",
+        "otherOptions": {}
+      },
+      "id": "5fad42fd-7b52-4f18-9529-b2c95eb7be2f",
+      "name": "Slack: Error - invalid line items to accounting",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        2208,
+        480
+      ],
+      "webhookId": "4eb8fd6e-7434-41d6-abdc-cdc47b163184",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SlackChannel }}",
+          "mode": "id"
+        },
+        "text": "=\u274c *Failed to create invoices for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\"* because there are no contacts associated to the HubSpot deal.\n\nPlease associate a contact on HubSpot and create invoice(s) manually.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "thread_ts": {
+            "replyValues": {
+              "thread_ts": "={{ $('Slack: Deal won').first().json.message_timestamp }}"
+            }
+          }
+        }
+      },
+      "id": "8e3e67e0-a487-4736-a547-60139405b68d",
+      "name": "Slack: Error - no contact in HubSpot",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1296,
+        48
+      ],
+      "webhookId": "4eb8fd6e-7434-41d6-abdc-cdc47b163184",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U09HLUH7EFN",
+          "mode": "list",
+          "cachedResultName": "accounts"
+        },
+        "text": "=\u274c *Failed to create invoices for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\"* because there are no contacts associated to the HubSpot deal.\n\nProposal: {{ $('Hubspot: Get deal').first().json.properties.qwilr_proposal.value }}\n\nPlease create invoice(s) manually.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "d7267ab3-1cba-4467-8306-a86e891b3a14",
+      "name": "Slack: Error - no contact in HubSpot to accounting",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1520,
+        48
+      ],
+      "webhookId": "4eb8fd6e-7434-41d6-abdc-cdc47b163184",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SlackChannel }}",
+          "mode": "id"
+        },
+        "text": "=\u274c *Failed to create invoice(s) on Xero* \u2014 contact {{ $('Hubspot: Get contact').item.json.properties.email.value }} not found in Xero.\n\nPlease check HubSpot \u2194 Xero sync and create invoice(s) manually.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "thread_ts": {
+            "replyValues": {
+              "thread_ts": "={{ $('Slack: Deal won').first().json.message_timestamp }}"
+            }
+          }
+        }
+      },
+      "id": "7d014ee0-0d9f-4a72-8029-7e90c2fc4eae",
+      "name": "Slack: Error - no contact in Xero",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        -896,
+        1936
+      ],
+      "webhookId": "8c1c88f9-2b92-4c57-92d8-684051bd3144",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U09HLUH7EFN",
+          "mode": "list",
+          "cachedResultName": "accounts"
+        },
+        "text": "=\u274c *Failed to create invoice(s) for deal \"{{ $('Hubspot: Get deal').item.json.properties.dealname.value }}\"*\n\nProposal: {{ $('Hubspot: Get deal').item.json.properties.qwilr_proposal.value }}\n\nPlease create invoice(s) manually.",
+        "otherOptions": {}
+      },
+      "id": "25579e53-7bba-4e63-be35-e25d846734a0",
+      "name": "Slack: Error - no contact in Xero to accounting",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        -672,
+        1936
+      ],
+      "webhookId": "4eb8fd6e-7434-41d6-abdc-cdc47b163184",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "organizationId": "={{ $('Config').item.json.XeroTenant }}",
+        "name": "={{ $('Hubspot: Get contact').item.json.properties.firstname.value }} {{ $('Hubspot: Get contact').item.json.properties.lastname.value }}",
+        "additionalFields": {
+          "emailAddress": "={{ $('Hubspot: Get contact').item.json.properties.email.value }}"
+        }
+      },
+      "id": "bdb0fd0a-2cb1-4edf-a7b2-6437e38dde31",
+      "name": "Create a contact",
+      "type": "n8n-nodes-base.xero",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        -144
+      ],
+      "credentials": {
+        "xeroOAuth2Api": {
+          "id": "jskZTvJLa8LuOxrd",
+          "name": "YourCompany: Xero account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "accounts@yourcompany.com",
+        "subject": "=New deal, create invoices for: {{ $('Hubspot: Get deal').first().json.properties.dealname.value }}",
+        "bodyContent": "=\u274c *Failed to create invoice(s) for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\"*\n\nProposal: {{ $('Hubspot: Get deal').first().json.properties.qwilr_proposal.value }}\n\nPlease create invoice(s) manually.",
+        "additionalFields": {
+          "ccRecipients": "person1@company.com",
+          "importance": "High"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        48
+      ],
+      "id": "0760b19b-55cb-4758-91b9-6542f3cb01a5",
+      "name": "Email: Accounts create manually",
+      "webhookId": "07d09753-68de-4616-a1e0-d799cc0d5780",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "azOFMTypy2ecR4Sk",
+          "name": "Your Name's Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "accounts@yourcompany.com",
+        "subject": "=New deal, create invoices for: {{ $('Hubspot: Get deal').item.json.properties.dealname.value }}",
+        "bodyContent": "=\u274c *Failed to create invoice(s) for deal \"{{ $('Hubspot: Get deal').item.json.properties.dealname.value }}\"*\n\nProposal: {{ $('Hubspot: Get deal').item.json.properties.qwilr_proposal.value }}\n\nPlease create invoice(s) manually.",
+        "additionalFields": {
+          "ccRecipients": "person1@company.com",
+          "importance": "High"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        1936
+      ],
+      "id": "3c60e737-0fac-4532-b561-bf0eb9b6b81f",
+      "name": "Email: Accounts create manually1",
+      "webhookId": "07d09753-68de-4616-a1e0-d799cc0d5780",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "azOFMTypy2ecR4Sk",
+          "name": "Your Name's Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "accounts@yourcompany.com",
+        "subject": "=New deal, create invoices for: {{ $('Hubspot: Get deal').first().json.properties.dealname.value }}",
+        "bodyContent": "=\u274c *Failed to create invoice(s) for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\"*\n\nProposal: {{ $('Hubspot: Get deal').first().json.properties.qwilr_proposal.value }}\n\nPlease create invoice(s) manually.",
+        "additionalFields": {
+          "ccRecipients": "person1@company.com",
+          "importance": "High"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        2432,
+        480
+      ],
+      "id": "66b359ba-679a-4fba-b89d-690d6baa6a8b",
+      "name": "Email: Accounts create manually2",
+      "webhookId": "07d09753-68de-4616-a1e0-d799cc0d5780",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "azOFMTypy2ecR4Sk",
+          "name": "Your Name's Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "724ca1cc-f503-44c4-a991-3fcee94ddaf8",
+              "leftValue": "={{ $('Hubspot: Get deal').item.json.properties.qwilr_proposal.value }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        688,
+        -224
+      ],
+      "id": "fc29e28a-3c3e-4360-8a07-6d15493a46e9",
+      "name": "Is Qwilr proposal?"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SlackChannel }}",
+          "mode": "id"
+        },
+        "text": "={{ $('Hubspot: Get deal').first().json.properties.dealname.value }} signed the proposal for ${{ $('Hubspot: Get deal').first().json.properties.hs_forecast_amount.value }}\n\nNo Qwilr proposal was found, therefore no invoices were created - please create manually.\n\n<https://app.hubspot.com/contacts/[hubspot-portal-id]/record/0-3/{{ $('HubSpot Trigger').item.json.dealId }}|See deal on HubSpot>",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "877282fd-d477-4024-8332-cdfa491fa5d5",
+      "name": "Slack: Deal won no Qwilr",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1072,
+        240
+      ],
+      "webhookId": "07e52755-8323-4cbe-892c-2d86e72a7a65",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "=U09HLUH7EFN",
+          "mode": "id"
+        },
+        "text": "=\u274c *Failed to create invoices for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\"* because no Qwilr proposal was found.\n\nProposal: {{ $('Hubspot: Get deal').first().json.properties.qwilr_proposal.value }}\n\nPlease create invoice(s) manually.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "bc9bcae1-3344-49be-be00-e4efa69eb0c5",
+      "name": "Slack: Error - no contact in HubSpot to accounting1",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1296,
+        240
+      ],
+      "webhookId": "4eb8fd6e-7434-41d6-abdc-cdc47b163184",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "accounts@yourcompany.com",
+        "subject": "=New deal, create invoices for: {{ $('Hubspot: Get deal').first().json.properties.dealname.value }}",
+        "bodyContent": "=\u274c *Failed to create invoice(s) for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\" because no Qwilr proposal was found. Please check DocuSeal or ask the team for proposal.\n\nPlease create invoice(s) manually.",
+        "additionalFields": {
+          "ccRecipients": "person1@company.com",
+          "importance": "High"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        240
+      ],
+      "id": "2421caae-2fe5-4e8a-b1a1-44c5613fbbd6",
+      "name": "Email: Accounts create manually4",
+      "webhookId": "07d09753-68de-4616-a1e0-d799cc0d5780",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "azOFMTypy2ecR4Sk",
+          "name": "Your Name's Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8cb95adb-6176-4c92-8f97-2fac1cf29065",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "=CAP",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "709b2e27-776d-499b-8e85-cd6c7ede1e8c",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "Sales",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "id": "189951a0-3bb5-4777-ba0d-a247eae75fc8",
+      "name": "Is CAP or Sales?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        832,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "=[slack-channel-id]",
+          "mode": "id"
+        },
+        "text": "=*{{ $('Define Engagement if Drata').item.json.dealname }}* signed!\nEngagement type: {{ $('Define Engagement if Drata').item.json.engagement }}\nFramework: {{ $json.framework }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "d5fd90a7-2f09-4b34-9e0f-5dab2e8955ce",
+      "name": "Slack: Drata",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1104,
+        640
+      ],
+      "webhookId": "07e52755-8323-4cbe-892c-2d86e72a7a65",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const dealstage = $('Hubspot: Get deal').item.json.properties.dealstage.value;\nconst dealname = $('Hubspot: Get deal').item.json.properties.dealname?.value ?? '';\nconst framework = $('Hubspot: Get deal').item.json.properties.framework?.value ?? '';\nconst partner = $json.properties.partner?.value ?? '';\nconst engagement = $('Hubspot: Get deal').item.json.properties.engagement?.value ?? '';\n\nconst isCAP = dealstage === '1297403657';\nconst isSales = dealstage === '266058586';\nconst isDrata = partner.includes('Partner1');\n\nif (isDrata && isCAP) {\n  const engagementOutput = engagement || 'Accelerator Plan';\n  return [{ json: { output: 'CAP', engagement: engagementOutput, dealname, framework } }];\n}\n\nif (isDrata && isSales) {\n  const engagementOutput = engagement || 'Other Services';\n  return [{ json: { output: 'Sales', engagement: engagementOutput, dealname, framework } }];\n}\n\nreturn [{ json: { output: null, engagement: null, dealname, framework } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        640
+      ],
+      "id": "cf087ccb-7288-421b-b58c-8923b69ddb98",
+      "name": "Define Engagement if Drata"
+    },
+    {
+      "parameters": {
+        "toRecipients": "accounts@yourcompany.com",
+        "subject": "=New deal and invoices for: {{ $('Hubspot: Get deal').first().json.properties.dealname.value }}",
+        "bodyContent": "=Deal is signed and all invoices were created for {{ $('Hubspot: Get deal').first().json.properties.dealname.value }}. \n\nPlease review the invoices against the proposal and submit as applicable.\n\nProposal: {{ $('Hubspot: Get deal').first().json.properties.qwilr_proposal.value }}\n\n{{ $('Code: Format Slack invoice message').item.json.emailMessage }}",
+        "additionalFields": {
+          "ccRecipients": "person1@company.com",
+          "importance": "High"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        2624,
+        64
+      ],
+      "id": "c821ea01-ce89-4595-85a4-1c8c4ff0d8b0",
+      "name": "Email: Accounts review",
+      "webhookId": "07d09753-68de-4616-a1e0-d799cc0d5780",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "azOFMTypy2ecR4Sk",
+          "name": "Your Name's Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -432,
+        128
+      ],
+      "id": "0b10f9e0-f4e2-4620-9702-488bc9a5823e",
+      "name": "Wait",
+      "webhookId": "2db95af4-e173-4610-999b-d7a508487406"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "6mtEQBbnBP2TaWjs",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/6mtEQBbnBP2TaWjs",
+          "cachedResultName": "YourCompany: SubWF Check + Add Line Items (CAP to AP Upsell)"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        624,
+        432
+      ],
+      "id": "dbbeb1d5-4f4c-4fb8-a4c0-9a90fc61051d",
+      "name": "Check + Add Line Items"
+    }
+  ],
+  "connections": {
+    "HubSpot Trigger": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Hubspot: Get deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hubspot: Get deal": {
+      "main": [
+        [
+          {
+            "node": "Is test?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is test?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "If: stage is proposal signed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Define Engagement if Drata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If: stage is proposal signed": {
+      "main": [
+        [
+          {
+            "node": "Is Qwilr proposal?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check + Add Line Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hubspot: Get line item IDs": {
+      "main": [
+        [
+          {
+            "node": "Code: Prepare line item batch request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Prepare line item batch request": {
+      "main": [
+        [
+          {
+            "node": "Hubspot: Get line items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hubspot: Get line items": {
+      "main": [
+        [
+          {
+            "node": "Code: Validate line items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Validate line items": {
+      "main": [
+        [
+          {
+            "node": "If: Line items valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If: Line items valid?": {
+      "main": [
+        [
+          {
+            "node": "Merge: Line items + Contact ready",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Slack: Error - invalid line items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Error - invalid line items": {
+      "main": [
+        [
+          {
+            "node": "Slack: Error - invalid line items to accounting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hubspot: Get contact": {
+      "main": [
+        [
+          {
+            "node": "Xero: Get contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If: Contact associated?": {
+      "main": [
+        [
+          {
+            "node": "Hubspot: Get contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: Error - no contact in HubSpot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Error - no contact in HubSpot": {
+      "main": [
+        [
+          {
+            "node": "Slack: Error - no contact in HubSpot to accounting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Xero: Get contact": {
+      "main": [
+        [
+          {
+            "node": "If: Xero contact found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If: Xero contact found?": {
+      "main": [
+        [
+          {
+            "node": "Merge: Line items + Contact ready",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Error - no contact in Xero": {
+      "main": [
+        [
+          {
+            "node": "Slack: Error - no contact in Xero to accounting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge: Line items + Contact ready": {
+      "main": [
+        [
+          {
+            "node": "Code: Prepare invoices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Prepare invoices": {
+      "main": [
+        [
+          {
+            "node": "Xero: Create invoice(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Xero: Create invoice(s)": {
+      "main": [
+        [
+          {
+            "node": "Code: Format Slack invoice message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Format Slack invoice message": {
+      "main": [
+        [
+          {
+            "node": "Slack: Invoices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Invoices": {
+      "main": [
+        [
+          {
+            "node": "Slack: Invoices to accounting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Error - no contact in HubSpot to accounting": {
+      "main": [
+        [
+          {
+            "node": "Email: Accounts create manually",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Error - no contact in Xero to accounting": {
+      "main": [
+        [
+          {
+            "node": "Email: Accounts create manually1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Error - invalid line items to accounting": {
+      "main": [
+        [
+          {
+            "node": "Email: Accounts create manually2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Invoices to accounting": {
+      "main": [
+        [
+          {
+            "node": "Email: Accounts review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Qwilr proposal?": {
+      "main": [
+        [
+          {
+            "node": "Slack: Deal won",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If: Contact associated?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: Deal won no Qwilr",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Error - no contact in HubSpot to accounting1": {
+      "main": [
+        [
+          {
+            "node": "Email: Accounts create manually4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Deal won no Qwilr": {
+      "main": [
+        [
+          {
+            "node": "Slack: Error - no contact in HubSpot to accounting1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a contact": {
+      "main": [
+        [
+          {
+            "node": "Xero: Get contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is CAP or Sales?": {
+      "main": [
+        [
+          {
+            "node": "Slack: Drata",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Define Engagement if Drata": {
+      "main": [
+        [
+          {
+            "node": "Is CAP or Sales?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check + Add Line Items": {
+      "main": [
+        [
+          {
+            "node": "Hubspot: Get line item IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {
+    "HubSpot Trigger": [
+      {
+        "json": {
+          "eventId": 1470989325,
+          "subscriptionId": 5682924,
+          "portalId": 0,
+          "appId": 24418522,
+          "occurredAt": 1772718116608,
+          "subscriptionType": "deal.propertyChange",
+          "attemptNumber": 0,
+          "propertyName": "dealstage",
+          "propertyValue": "266058586",
+          "changeSource": "CRM_UI",
+          "sourceId": "userId:80743868",
+          "dealId": 54609937664
+        }
+      }
+    ]
+  },
+  "versionId": "5ca484f2-e399-4cb4-ae57-c7a8bb9fa81e",
+  "activeVersionId": "b412a44d-2668-4007-ad00-6cdcf40240e5",
+  "versionCounter": 660,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-12T15:12:50.675Z",
+      "createdAt": "2026-02-12T15:12:50.675Z",
+      "role": "workflow:owner",
+      "workflowId": "nE7KIYDBA84ra6CJLPvWm",
+      "projectId": "1xouAt4QdWWhUWuM",
+      "project": {
+        "updatedAt": "2025-10-13T14:48:28.241Z",
+        "createdAt": "2025-10-13T14:47:21.362Z",
+        "id": "1xouAt4QdWWhUWuM",
+        "name": "Your Name <your-email@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-05T16:56:18.000Z",
+    "createdAt": "2026-03-05T16:56:09.683Z",
+    "versionId": "b412a44d-2668-4007-ad00-6cdcf40240e5",
+    "workflowId": "nE7KIYDBA84ra6CJLPvWm",
+    "nodes": [
+      {
+        "parameters": {
+          "eventsUi": {
+            "eventValues": [
+              {
+                "name": "deal.propertyChange",
+                "property": "dealstage"
+              }
+            ]
+          },
+          "additionalFields": {}
+        },
+        "id": "6cbfffb7-0aa9-427a-a9c1-d8ba3cafe34c",
+        "name": "HubSpot Trigger",
+        "type": "n8n-nodes-base.hubspotTrigger",
+        "typeVersion": 1,
+        "position": [
+          -896,
+          144
+        ],
+        "webhookId": "33e4c331-edc3-409d-b7c5-f6d3461bbc3d",
+        "credentials": {
+          "hubspotDeveloperApi": {
+            "id": "wEPpNnDI5nSwDuVI",
+            "name": "YourCompany: HubSpot Developer account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "5ad8ebb7-81ad-4682-a557-e57b11f5597b",
+                "name": "SlackChannel",
+                "value": "[slack-channel-id]",
+                "type": "string"
+              },
+              {
+                "id": "1dbef840-adf1-41d3-b9fd-cab325ac5683",
+                "name": "XeroTenant",
+                "value": "72954cc8-ba90-4a36-94b2-498d3e264eb6",
+                "type": "string"
+              },
+              {
+                "id": "23842764-beb1-4a9e-95c3-ce238e216ce8",
+                "name": "XeroURL",
+                "value": "!4xn9q",
+                "type": "string"
+              },
+              {
+                "id": "98e8dfe6-894f-48d1-bb53-a91eb6a7ab17",
+                "name": "SlackDrata",
+                "value": "[slack-channel-id]",
+                "type": "string"
+              },
+              {
+                "id": "20f913f7-f728-4b64-976b-83c7ae7a41ed",
+                "name": "SlackAccounts",
+                "value": "U09HLUH7EFN",
+                "type": "string"
+              },
+              {
+                "id": "f649ab24-9a69-4901-a882-3f5f72aa1a78",
+                "name": "XeroProd",
+                "value": "72954cc8-ba90-4a36-94b2-498d3e264eb6",
+                "type": "string"
+              },
+              {
+                "id": "1e967440-df81-4393-99b5-02912dece193",
+                "name": "XeroTests",
+                "value": "ca846fde-e982-4071-934f-2c47f2b08a8e",
+                "type": "string"
+              },
+              {
+                "id": "1a5a6fe7-5136-4832-bc80-35c23b198fcc",
+                "name": "SlackTests",
+                "value": "[slack-channel-id]",
+                "type": "string"
+              },
+              {
+                "id": "6f139b53-a0fe-4040-87ad-f4545fae3505",
+                "name": "SlackProd",
+                "value": "[slack-channel-id]",
+                "type": "string"
+              },
+              {
+                "id": "7bc69cff-95d3-4e2e-9e4e-345cd6f70f9f",
+                "name": "XeroURLtests",
+                "value": "!6XPrS",
+                "type": "string"
+              },
+              {
+                "id": "e9893334-9873-416d-8eb0-8d42e0a4cd05",
+                "name": "XeroURLprod",
+                "value": "!4xn9q",
+                "type": "string"
+              },
+              {
+                "id": "a1e44948-0824-44b9-8a2f-7c156c82059e",
+                "name": "Slack Drata",
+                "value": "[slack-channel-id]",
+                "type": "string"
+              },
+              {
+                "id": "c9ac7372-1e9d-42d6-99c8-db1e3a833165",
+                "name": "Slack Accounts",
+                "value": "U09HLUH7EFN",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "cefe36ca-41b2-45c5-8022-415c4afe778f",
+        "name": "Config",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          -464,
+          144
+        ]
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "deal",
+          "operation": "get",
+          "dealId": {
+            "__rl": true,
+            "value": "={{ $('HubSpot Trigger').first().json.dealId }}",
+            "mode": "id"
+          },
+          "filters": {
+            "propertiesCollection": {
+              "propertiesValues": {
+                "properties": [
+                  "dealname",
+                  "dealstage",
+                  "amount",
+                  "qwilr_proposal",
+                  "partner",
+                  "engagement",
+                  "framework",
+                  "qwilr_template",
+                  "hs_num_of_associated_line_items"
+                ],
+                "propertyMode": "valueOnly"
+              }
+            }
+          }
+        },
+        "id": "7d80b458-4c18-4979-a1db-c7d94aab8c67",
+        "name": "Hubspot: Get deal",
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          -240,
+          144
+        ],
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "66b68b1b-c828-4d8a-a6f3-081059076aa0",
+                "leftValue": "={{ $('Hubspot: Get deal').item.json.properties.dealname.value }}",
+                "rightValue": "TEST DEAL TEMP",
+                "operator": {
+                  "type": "string",
+                  "operation": "contains"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "f19d2c02-e374-4750-baa6-2462d1b33c88",
+        "name": "Is test?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          -16,
+          144
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "8cb95adb-6176-4c92-8f97-2fac1cf29065",
+                "leftValue": "={{ $('Hubspot: Get deal').item.json.properties.dealstage.value }}",
+                "rightValue": "266058586",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              },
+              {
+                "id": "709b2e27-776d-499b-8e85-cd6c7ede1e8c",
+                "leftValue": "={{ $('Hubspot: Get deal').item.json.properties.dealstage.value }}",
+                "rightValue": "1211728151",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals",
+                  "name": "filter.operator.equals"
+                }
+              }
+            ],
+            "combinator": "or"
+          },
+          "options": {}
+        },
+        "id": "f7f2788c-37e3-49bf-b1d7-90a409591842",
+        "name": "If: stage is proposal signed",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          416,
+          144
+        ]
+      },
+      {
+        "parameters": {
+          "url": "=https://api.hubapi.com/crm/v4/objects/deals/{{ $('Hubspot: Get deal').item.json.dealId }}/associations/line_items",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "hubspotAppToken",
+          "options": {}
+        },
+        "id": "d1521a77-f5e9-426f-9433-8b2ccd5034cb",
+        "name": "Hubspot: Get line item IDs",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          864,
+          432
+        ],
+        "credentials": {
+          "hubspotApi": {
+            "id": "xA7Cv3rdLZvRM07y",
+            "name": "HubSpot account"
+          },
+          "hubspotDeveloperApi": {
+            "id": "wEPpNnDI5nSwDuVI",
+            "name": "YourCompany: HubSpot Developer account"
+          },
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Prepare batch request body for HubSpot line items\nconst associations = $input.item.json.results;\nreturn [{ json: {\n  properties: [\"name\",\"quantity\",\"price\",\"amount\",\"hs_product_id\",\"hs_sku\",\"xero_account\",\"payment_terms\",\"recurringbillingfrequency\",\"hs_total_discount\"],\n  inputs: associations.map(item => ({ id: item.toObjectId.toString() }))\n}}];\n"
+        },
+        "id": "279c22b4-0d63-4423-ac4c-9969db87f76a",
+        "name": "Code: Prepare line item batch request",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1088,
+          432
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=https://api.hubspot.com/crm/v3/objects/line_items/batch/read",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "hubspotAppToken",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ $json }}",
+          "options": {}
+        },
+        "id": "ae7c41c4-a61e-4ea8-8ad5-1bf6f9829dd0",
+        "name": "Hubspot: Get line items",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          1312,
+          432
+        ],
+        "credentials": {
+          "hubspotApi": {
+            "id": "xA7Cv3rdLZvRM07y",
+            "name": "HubSpot account"
+          },
+          "hubspotDeveloperApi": {
+            "id": "wEPpNnDI5nSwDuVI",
+            "name": "YourCompany: HubSpot Developer account"
+          },
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Validate line items and split into invoice buckets\nconst response = $input.item.json;\n\n// HubSpot batch read wraps results in an outer array\nconst lineItems = Array.isArray(response)\n  ? response[0].results\n  : (response.results || []);\n\nconst errors = [];\nconst invoice1Items = [];\nconst invoice2Items = [];\nconst recurringMonthlyItems = [];\n\nif (lineItems.length === 0) {\n  return [{ json: {\n    hasErrors: true,\n    errorSummary: \"Deal has no line items. Please add products to the deal before closing.\",\n    errors: []\n  }}];\n}\n\nlineItems.forEach((item, index) => {\n  const props = item.properties;\n  const name = props.name || `Line item #${index + 1}`;\n  const paymentTerms = props.payment_terms || '';\n  const billingFrequency = (props.recurringbillingfrequency || '').toLowerCase();\n  const quantity = parseFloat(props.quantity) || 0;\n  const sku = props.hs_sku || '';\n  const unitPrice = parseFloat(props.price) || 0;\n  const discount = parseFloat(props.hs_total_discount) || 0;\n  const accountCode = props.xero_account ? String(props.xero_account).padStart(2, '0') : '';\n  const itemErrors = [];\n\n  if (!props.name)     itemErrors.push(\"Missing name\");\n  if (!paymentTerms)   itemErrors.push(\"Missing payment terms\");\n  if (quantity === 0)  itemErrors.push(\"Quantity is 0\");\n  if (!sku)            itemErrors.push(\"Missing SKU - cannot sync with Xero catalog\");\n  if (unitPrice === 0) itemErrors.push(\"Price is $0\");\n  if (!accountCode)    itemErrors.push(\"Missing Xero account code\");\n\n  const validTerms = ['50/50', '100%', 'Recurring'];\n  if (paymentTerms && !validTerms.includes(paymentTerms))\n    itemErrors.push(`Invalid payment terms: \"${paymentTerms}\" (must be \"50/50\", \"100%\", or \"Recurring\")`);\n\n  if (paymentTerms === 'Recurring' && !['monthly', 'annually'].includes(billingFrequency))\n    itemErrors.push(`Invalid billing frequency: \"${props.recurringbillingfrequency}\" (must be \"Monthly\" or \"Annually\")`);\n\n  if (itemErrors.length > 0) {\n    errors.push({ productName: name, issues: itemErrors });\n    return;\n  }\n\n  const baseItem = {\n    ItemCode: sku,\n    AccountCode: accountCode,\n    Quantity: quantity,\n    UnitAmount: unitPrice,\n    DiscountAmount: discount > 0 ? discount : 0,\n    TaxType: \"NONE\"\n  };\n\n  if (paymentTerms === '50/50') {\n    invoice1Items.push({\n      ...baseItem,\n      Quantity: quantity * 0.5,\n      DiscountAmount: discount > 0 ? parseFloat((discount * 0.5).toFixed(2)) : 0,\n      Description: name + ' (Payment 1/2)'\n    });\n    invoice2Items.push({\n      ...baseItem,\n      Quantity: quantity * 0.5,\n      DiscountAmount: discount > 0 ? parseFloat((discount * 0.5).toFixed(2)) : 0,\n      Description: name + ' (Payment 2/2)'\n    });\n  } else if (paymentTerms === '100%') {\n    invoice2Items.push({ ...baseItem, Description: name });\n\n  } else if (paymentTerms === 'Recurring' && billingFrequency === 'annually') {\n    invoice1Items.push({ ...baseItem, Description: name + ' (Annual)' });\n\n  } else if (paymentTerms === 'Recurring' && billingFrequency === 'monthly') {\n    recurringMonthlyItems.push({ ...baseItem, Description: name + ' (Monthly)' });\n  }\n});\n\nconst errorSummary = errors.length > 0\n  ? errors.map(e => `Product: ${e.productName}\\nIssues: ${e.issues.join(', ')}`).join('\\n\\n')\n  : '';\n\nreturn [{ json: {\n  invoice1Items,\n  invoice2Items,\n  recurringMonthlyItems,\n  hasErrors: errors.length > 0,\n  errorSummary,\n  errors\n}}];\n"
+        },
+        "id": "4f94c012-bf7e-4c1b-bb03-83b52ab5e1ef",
+        "name": "Code: Validate line items",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1536,
+          432
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "4e088f4a-f5f9-45c6-b74b-fec28300f68f",
+                "leftValue": "={{ $json.hasErrors }}",
+                "rightValue": false,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "2cf65c31-d936-4a20-8ff8-b241c3970d57",
+        "name": "If: Line items valid?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1760,
+          432
+        ]
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "operation": "get",
+          "contactId": {
+            "__rl": true,
+            "value": "={{ $('Hubspot: Get deal').item.json.associations.associatedVids[0] }}",
+            "mode": "id"
+          },
+          "additionalFields": {}
+        },
+        "id": "8f137819-ac9b-42f4-b082-c1f874e8f022",
+        "name": "Hubspot: Get contact",
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          1296,
+          -208
+        ],
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "6c96a4cd-f23a-404f-8b2f-a774f943571a",
+                "leftValue": "={{ $('Hubspot: Get deal').item.json.associations.associatedVids }}",
+                "rightValue": 0,
+                "operator": {
+                  "type": "array",
+                  "operation": "notEmpty",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "439d5f39-bbf1-434a-aca9-5694ff810802",
+        "name": "If: Contact associated?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1072,
+          -48
+        ]
+      },
+      {
+        "parameters": {
+          "url": "=https://api.xero.com/api.xro/2.0/Contacts",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "xeroOAuth2Api",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "where",
+                "value": "=EmailAddress==\"{{ $('Hubspot: Get contact').item.json.properties.email.value }}\""
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "xero-tenant-id",
+                "value": "={{ $('Config').item.json.XeroTenant }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "932c3d33-c5e2-424a-a1c0-09e1beceae9f",
+        "name": "Xero: Get contact",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          1520,
+          -208
+        ],
+        "credentials": {
+          "xeroOAuth2Api": {
+            "id": "jskZTvJLa8LuOxrd",
+            "name": "YourCompany: Xero account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "62698c9f-8f1f-41f7-a885-3065d65ff118",
+                "leftValue": "={{ $json.Contacts }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "array",
+                  "operation": "notEmpty",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "c8928d72-07b2-4a87-a373-2495d8e5e281",
+        "name": "If: Xero contact found?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1744,
+          -208
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "4a25f835-b3ff-47c3-bd1a-13bce08fe543",
+        "name": "Merge: Line items + Contact ready",
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3,
+        "position": [
+          2192,
+          -96
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// Prepare Xero invoice payloads from merged line item + contact data\nconst invoice1Items         = $('Code: Validate line items').first().json.invoice1Items;\nconst invoice2Items         = $('Code: Validate line items').first().json.invoice2Items;\nconst recurringMonthlyItems = $('Code: Validate line items').first().json.recurringMonthlyItems;\nconst contactID             = $('Xero: Get contact').first().json.Contacts[0].ContactID;\nconst dealName              = $('Hubspot: Get deal').first().json.properties.dealname.value;\n\nconst now = new Date();\nconst addDays = (base, days) => {\n  const d = new Date(base);\n  d.setDate(d.getDate() + days);\n  return d.toISOString().split('T')[0];\n};\nconst addMonths = (base, months) => {\n  const d = new Date(base);\n  d.setMonth(d.getMonth() + months);\n  return d.toISOString().split('T')[0];\n};\n\nconst has1 = invoice1Items.length > 0;\nconst has2 = invoice2Items.length > 0;\nconst invoices = [];\n\n// If only invoice2Items exist (all 100% items), treat as a single invoice with no split suffix\nif (!has1 && has2) {\n  invoices.push({ json: {\n    Type: \"ACCREC\",\n    Contact: { ContactID: contactID },\n    LineItems: invoice2Items,\n    Date: now.toISOString().split('T')[0],\n    DueDate: addDays(now, 7),\n    Status: \"DRAFT\",\n    Reference: dealName\n  }});\n} else {\n  // Invoice 1: 50/50 first halves + annual recurring\n  if (has1) {\n    invoices.push({ json: {\n      Type: \"ACCREC\",\n      Contact: { ContactID: contactID },\n      LineItems: invoice1Items,\n      Date: now.toISOString().split('T')[0],\n      DueDate: addDays(now, 7),\n      Status: \"DRAFT\",\n      Reference: `${dealName} - Invoice 1`\n    }});\n  }\n\n  // Invoice 2: 50/50 second halves + 100% items\n  if (has2) {\n    const date2 = addDays(now, 14);\n    invoices.push({ json: {\n      Type: \"ACCREC\",\n      Contact: { ContactID: contactID },\n      LineItems: invoice2Items,\n      Date: date2,\n      DueDate: addDays(now, 21),\n      Status: \"DRAFT\",\n      Reference: `${dealName} - Invoice 2`\n    }});\n  }\n}\n\n// Monthly recurring: 12 invoices, one per month\nif (recurringMonthlyItems.length > 0) {\n  for (let i = 0; i < 12; i++) {\n    const invoiceDate = addMonths(now, i);\n    invoices.push({ json: {\n      Type: \"ACCREC\",\n      Contact: { ContactID: contactID },\n      LineItems: recurringMonthlyItems,\n      Date: invoiceDate,\n      DueDate: addDays(new Date(invoiceDate), 7),\n      Status: \"DRAFT\",\n      Reference: `${dealName} - Monthly ${i + 1}/12`\n    }});\n  }\n}\n\nreturn invoices;\n"
+        },
+        "id": "36f6e93b-9151-48da-a929-9ce1fa1965ba",
+        "name": "Code: Prepare invoices",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2416,
+          -96
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.xero.com/api.xro/2.0/Invoices",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "xeroOAuth2Api",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "xero-tenant-id",
+                "value": "={{ $('Config').first().json.XeroTenant }}"
+              }
+            ]
+          },
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "Type",
+                "value": "={{ $json.Type }}"
+              },
+              {
+                "name": "Contact",
+                "value": "={{ $json.Contact }}"
+              },
+              {
+                "name": "LineItems",
+                "value": "={{ $json.LineItems }}"
+              },
+              {
+                "name": "Date",
+                "value": "={{ $json.Date }}"
+              },
+              {
+                "name": "DueDate",
+                "value": "={{ $json.DueDate }}"
+              },
+              {
+                "name": "Status",
+                "value": "={{ $json.Status }}"
+              },
+              {
+                "name": "Reference",
+                "value": "={{ $json.Reference }}"
+              }
+            ]
+          },
+          "options": {
+            "batching": {
+              "batch": {
+                "batchSize": 1
+              }
+            }
+          }
+        },
+        "id": "54f7a970-c3d8-40a7-9d9e-668777e9ec0e",
+        "name": "Xero: Create invoice(s)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          2640,
+          -96
+        ],
+        "credentials": {
+          "xeroOAuth2Api": {
+            "id": "jskZTvJLa8LuOxrd",
+            "name": "YourCompany: Xero account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Format Xero invoice details for Slack + Email notification\nconst invoicesData = $input.all();\nconst xeroURL = $('Config').first().json.XeroURL;\nconst baseUrl = `https://go.xero.com/app/${xeroURL}/invoicing/edit/`;\n\nconst allInvoices = [];\ninvoicesData.forEach(item => {\n  if (item.json.Invoices && item.json.Invoices.length > 0)\n    allInvoices.push(...item.json.Invoices);\n});\n\nconst contact      = allInvoices[0].Contact;\nconst contactName  = contact.Name;\nconst contactEmail = contact.EmailAddress;\nconst totalAmount  = allInvoices.reduce((sum, inv) => sum + inv.Total, 0);\n\nconst formatCurrency = (n) =>\n  `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;\n\nconst formatDate = (s) =>\n  new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });\n\nlet slackMessage = '';\nlet emailMessage = '';\n\n// 1 invoice, 1 product\nif (allInvoices.length === 1 && allInvoices[0].LineItems.length === 1) {\n  const inv = allInvoices[0];\n  const li  = inv.LineItems[0];\n  const url = `${baseUrl}${inv.InvoiceID}`;\n\n  slackMessage  = `Invoice ${inv.InvoiceNumber} created for ${contactName} (${contactEmail}) for ${formatCurrency(inv.Total)}: ${li.Description}\\n\\n`;\n  slackMessage += `<${url}|Check and approve draft>`;\n\n  emailMessage  = `Invoice ${inv.InvoiceNumber} created for ${contactName} (${contactEmail}) for ${formatCurrency(inv.Total)}: ${li.Description}\\n\\n`;\n  emailMessage += `Check and approve draft: ${url}`;\n}\n// 1 invoice, 2+ products\nelse if (allInvoices.length === 1) {\n  const inv = allInvoices[0];\n  const url = `${baseUrl}${inv.InvoiceID}`;\n\n  slackMessage  = `Invoice ${inv.InvoiceNumber} created for ${contactName} (${contactEmail}) for ${formatCurrency(inv.Total)} as follows:\\n`;\n  emailMessage  = `Invoice ${inv.InvoiceNumber} created for ${contactName} (${contactEmail}) for ${formatCurrency(inv.Total)} as follows:\\n`;\n\n  inv.LineItems.forEach((li, i) => {\n    slackMessage += `${i+1}. ${li.Quantity}x ${li.Description}\\n`;\n    emailMessage += `${i+1}. ${li.Quantity}x ${li.Description}\\n`;\n  });\n\n  slackMessage += `\\n<${url}|Check and approve draft>`;\n  emailMessage += `\\nCheck and approve draft: ${url}`;\n}\n// 2+ invoices\nelse {\n  slackMessage  = `Invoices created for ${contactName} (${contactEmail}) for ${formatCurrency(totalAmount)} as follows:\\n`;\n  emailMessage  = `Invoices created for ${contactName} (${contactEmail}) for ${formatCurrency(totalAmount)} as follows:\\n`;\n\n  allInvoices.forEach(inv => {\n    const url     = `${baseUrl}${inv.InvoiceID}`;\n    const dueDate = formatDate(inv.DueDateString);\n\n    if (inv.LineItems.length === 1) {\n      const li       = inv.LineItems[0];\n      const discount = li.UnitAmount * li.Quantity - li.LineAmount;\n      const discText = discount > 0 ? ` (-${formatCurrency(discount)})` : '';\n\n      slackMessage += `*<${url}|Invoice ${inv.InvoiceNumber}> (due ${dueDate}):*\\n`;\n      slackMessage += `          ${li.Quantity}x ${li.Description}${discText} = ${formatCurrency(li.LineAmount)}\\n`;\n\n      emailMessage += `Invoice ${inv.InvoiceNumber} (due ${dueDate}):\\n`;\n      emailMessage += `  ${li.Quantity}x ${li.Description}${discText} = ${formatCurrency(li.LineAmount)}\\n`;\n      emailMessage += `  ${url}\\n`;\n    } else {\n      slackMessage += `*<${url}|Invoice ${inv.InvoiceNumber}> (due ${dueDate}) for ${formatCurrency(inv.Total)}:*\\n`;\n      emailMessage += `Invoice ${inv.InvoiceNumber} (due ${dueDate}) for ${formatCurrency(inv.Total)}:\\n`;\n      emailMessage += `  ${url}\\n`;\n\n      inv.LineItems.forEach(li => {\n        const discount = li.UnitAmount * li.Quantity - li.LineAmount;\n        const discText = discount > 0 ? ` (-${formatCurrency(discount)})` : '';\n        slackMessage += `          ${li.Quantity}x ${li.Description}${discText} = ${formatCurrency(li.LineAmount)}\\n`;\n        emailMessage += `  ${li.Quantity}x ${li.Description}${discText} = ${formatCurrency(li.LineAmount)}\\n`;\n      });\n    }\n  });\n\n  if (allInvoices.length === 2) {\n    slackMessage += `\\nCheck and approve draft of first invoice ${allInvoices[0].InvoiceNumber} on Xero. The second invoice should be approved and sent once the project is completed.`;\n    emailMessage += `\\nCheck and approve draft of first invoice ${allInvoices[0].InvoiceNumber} on Xero. The second invoice should be approved and sent once the project is completed.`;\n  } else {\n    slackMessage += `\\nCheck and approve draft on Xero by clicking the hyperlinked invoice line above.`;\n    emailMessage += `\\nCheck and approve draft on Xero using the links above.`;\n  }\n}\n\nreturn { json: { slackMessage, emailMessage, contactName, contactEmail, totalAmount, invoiceCount: allInvoices.length }};\n"
+        },
+        "id": "d542c1c2-3f96-42db-b900-ab16be057cbd",
+        "name": "Code: Format Slack invoice message",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2864,
+          -96
+        ]
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "={{ $('Config').first().json.SlackChannel }}",
+            "mode": "id"
+          },
+          "text": "={{ $json.slackMessage }}",
+          "otherOptions": {
+            "includeLinkToWorkflow": false,
+            "thread_ts": {
+              "replyValues": {
+                "thread_ts": "={{ $('Slack: Deal won').first().json.message_timestamp }}"
+              }
+            }
+          }
+        },
+        "id": "20874385-4f4b-4b48-a161-66a8d9c0ce73",
+        "name": "Slack: Invoices",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          3088,
+          -96
+        ],
+        "webhookId": "07e52755-8323-4cbe-892c-2d86e72a7a65",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "select": "user",
+          "user": {
+            "__rl": true,
+            "value": "U09HLUH7EFN",
+            "mode": "list",
+            "cachedResultName": "accounts"
+          },
+          "text": "=Proposal: {{ $('Hubspot: Get deal').first().json.properties.qwilr_proposal.value }}\n\n{{ $('Code: Format Slack invoice message').item.json.slackMessage }}",
+          "otherOptions": {
+            "includeLinkToWorkflow": false
+          }
+        },
+        "id": "6fd07704-6965-4ccc-8e18-61fc0157096f",
+        "name": "Slack: Invoices to accounting",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          3312,
+          -96
+        ],
+        "webhookId": "07e52755-8323-4cbe-892c-2d86e72a7a65",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "={{ $('Config').first().json.SlackChannel }}",
+            "mode": "id"
+          },
+          "text": "={{ $('Hubspot: Get deal').item.json.properties.dealname.value }} signed the proposal for ${{ $('Hubspot: Get deal').item.json.properties.hs_forecast_amount.value }}\n\n<https://app.hubspot.com/contacts/[hubspot-portal-id]/record/0-3/{{ $('HubSpot Trigger').item.json.dealId }}|See deal on HubSpot>",
+          "otherOptions": {
+            "includeLinkToWorkflow": false
+          }
+        },
+        "id": "128c7f96-bfea-48fc-b26f-466890af849b",
+        "name": "Slack: Deal won",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          1072,
+          -240
+        ],
+        "webhookId": "07e52755-8323-4cbe-892c-2d86e72a7a65",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "={{ $('Config').first().json.SlackChannel }}",
+            "mode": "id"
+          },
+          "text": "=\u274c Failed to create invoices for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\"\n{{ $('Code: Validate line items').first().json.errorSummary }}\n\nPlease fix these issues in HubSpot and either re-close the deal or create the invoice manually.",
+          "otherOptions": {
+            "includeLinkToWorkflow": false,
+            "thread_ts": {
+              "replyValues": {
+                "thread_ts": "={{ $('Slack: Deal won').first().json.message_timestamp }}"
+              }
+            }
+          }
+        },
+        "id": "0033673d-cbe5-4996-a5b8-a631d17c44e2",
+        "name": "Slack: Error - invalid line items",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.4,
+        "position": [
+          1984,
+          480
+        ],
+        "webhookId": "4eb8fd6e-7434-41d6-abdc-cdc47b163184",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "select": "user",
+          "user": {
+            "__rl": true,
+            "value": "U09HLUH7EFN",
+            "mode": "list",
+            "cachedResultName": "accounts"
+          },
+          "text": "=\u274c *Failed to create invoices for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\"*\n\nProposal: {{ $('Hubspot: Get deal').first().json.properties.qwilr_proposal.value }}\n\nPlease create invoice(s) manually.",
+          "otherOptions": {}
+        },
+        "id": "5fad42fd-7b52-4f18-9529-b2c95eb7be2f",
+        "name": "Slack: Error - invalid line items to accounting",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.4,
+        "position": [
+          2208,
+          480
+        ],
+        "webhookId": "4eb8fd6e-7434-41d6-abdc-cdc47b163184",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "={{ $('Config').first().json.SlackChannel }}",
+            "mode": "id"
+          },
+          "text": "=\u274c *Failed to create invoices for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\"* because there are no contacts associated to the HubSpot deal.\n\nPlease associate a contact on HubSpot and create invoice(s) manually.",
+          "otherOptions": {
+            "includeLinkToWorkflow": false,
+            "thread_ts": {
+              "replyValues": {
+                "thread_ts": "={{ $('Slack: Deal won').first().json.message_timestamp }}"
+              }
+            }
+          }
+        },
+        "id": "8e3e67e0-a487-4736-a547-60139405b68d",
+        "name": "Slack: Error - no contact in HubSpot",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.4,
+        "position": [
+          1296,
+          48
+        ],
+        "webhookId": "4eb8fd6e-7434-41d6-abdc-cdc47b163184",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "select": "user",
+          "user": {
+            "__rl": true,
+            "value": "U09HLUH7EFN",
+            "mode": "list",
+            "cachedResultName": "accounts"
+          },
+          "text": "=\u274c *Failed to create invoices for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\"* because there are no contacts associated to the HubSpot deal.\n\nProposal: {{ $('Hubspot: Get deal').first().json.properties.qwilr_proposal.value }}\n\nPlease create invoice(s) manually.",
+          "otherOptions": {
+            "includeLinkToWorkflow": false
+          }
+        },
+        "id": "d7267ab3-1cba-4467-8306-a86e891b3a14",
+        "name": "Slack: Error - no contact in HubSpot to accounting",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.4,
+        "position": [
+          1520,
+          48
+        ],
+        "webhookId": "4eb8fd6e-7434-41d6-abdc-cdc47b163184",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "={{ $('Config').first().json.SlackChannel }}",
+            "mode": "id"
+          },
+          "text": "=\u274c *Failed to create invoice(s) on Xero* \u2014 contact {{ $('Hubspot: Get contact').item.json.properties.email.value }} not found in Xero.\n\nPlease check HubSpot \u2194 Xero sync and create invoice(s) manually.",
+          "otherOptions": {
+            "includeLinkToWorkflow": false,
+            "thread_ts": {
+              "replyValues": {
+                "thread_ts": "={{ $('Slack: Deal won').first().json.message_timestamp }}"
+              }
+            }
+          }
+        },
+        "id": "7d014ee0-0d9f-4a72-8029-7e90c2fc4eae",
+        "name": "Slack: Error - no contact in Xero",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.4,
+        "position": [
+          -1104,
+          704
+        ],
+        "webhookId": "8c1c88f9-2b92-4c57-92d8-684051bd3144",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "select": "user",
+          "user": {
+            "__rl": true,
+            "value": "U09HLUH7EFN",
+            "mode": "list",
+            "cachedResultName": "accounts"
+          },
+          "text": "=\u274c *Failed to create invoice(s) for deal \"{{ $('Hubspot: Get deal').item.json.properties.dealname.value }}\"*\n\nProposal: {{ $('Hubspot: Get deal').item.json.properties.qwilr_proposal.value }}\n\nPlease create invoice(s) manually.",
+          "otherOptions": {}
+        },
+        "id": "25579e53-7bba-4e63-be35-e25d846734a0",
+        "name": "Slack: Error - no contact in Xero to accounting",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.4,
+        "position": [
+          -880,
+          704
+        ],
+        "webhookId": "4eb8fd6e-7434-41d6-abdc-cdc47b163184",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "resource": "contact",
+          "organizationId": "={{ $('Config').item.json.XeroTenant }}",
+          "name": "={{ $('Hubspot: Get contact').item.json.properties.firstname.value }} {{ $('Hubspot: Get contact').item.json.properties.lastname.value }}",
+          "additionalFields": {
+            "emailAddress": "={{ $('Hubspot: Get contact').item.json.properties.email.value }}"
+          }
+        },
+        "id": "bdb0fd0a-2cb1-4edf-a7b2-6437e38dde31",
+        "name": "Create a contact",
+        "type": "n8n-nodes-base.xero",
+        "typeVersion": 1,
+        "position": [
+          1920,
+          -144
+        ],
+        "credentials": {
+          "xeroOAuth2Api": {
+            "id": "jskZTvJLa8LuOxrd",
+            "name": "YourCompany: Xero account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "toRecipients": "accounts@yourcompany.com",
+          "subject": "=New deal, create invoices for: {{ $('Hubspot: Get deal').first().json.properties.dealname.value }}",
+          "bodyContent": "=\u274c *Failed to create invoice(s) for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\"*\n\nProposal: {{ $('Hubspot: Get deal').first().json.properties.qwilr_proposal.value }}\n\nPlease create invoice(s) manually.",
+          "additionalFields": {
+            "ccRecipients": "person1@company.com",
+            "importance": "High"
+          }
+        },
+        "type": "n8n-nodes-base.microsoftOutlook",
+        "typeVersion": 2,
+        "position": [
+          1744,
+          48
+        ],
+        "id": "0760b19b-55cb-4758-91b9-6542f3cb01a5",
+        "name": "Email: Accounts create manually",
+        "webhookId": "07d09753-68de-4616-a1e0-d799cc0d5780",
+        "credentials": {
+          "microsoftOutlookOAuth2Api": {
+            "id": "azOFMTypy2ecR4Sk",
+            "name": "Your Name's Microsoft Outlook account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "toRecipients": "accounts@yourcompany.com",
+          "subject": "=New deal, create invoices for: {{ $('Hubspot: Get deal').item.json.properties.dealname.value }}",
+          "bodyContent": "=\u274c *Failed to create invoice(s) for deal \"{{ $('Hubspot: Get deal').item.json.properties.dealname.value }}\"*\n\nProposal: {{ $('Hubspot: Get deal').item.json.properties.qwilr_proposal.value }}\n\nPlease create invoice(s) manually.",
+          "additionalFields": {
+            "ccRecipients": "person1@company.com",
+            "importance": "High"
+          }
+        },
+        "type": "n8n-nodes-base.microsoftOutlook",
+        "typeVersion": 2,
+        "position": [
+          -656,
+          704
+        ],
+        "id": "3c60e737-0fac-4532-b561-bf0eb9b6b81f",
+        "name": "Email: Accounts create manually1",
+        "webhookId": "07d09753-68de-4616-a1e0-d799cc0d5780",
+        "credentials": {
+          "microsoftOutlookOAuth2Api": {
+            "id": "azOFMTypy2ecR4Sk",
+            "name": "Your Name's Microsoft Outlook account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "toRecipients": "accounts@yourcompany.com",
+          "subject": "=New deal, create invoices for: {{ $('Hubspot: Get deal').first().json.properties.dealname.value }}",
+          "bodyContent": "=\u274c *Failed to create invoice(s) for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\"*\n\nProposal: {{ $('Hubspot: Get deal').first().json.properties.qwilr_proposal.value }}\n\nPlease create invoice(s) manually.",
+          "additionalFields": {
+            "ccRecipients": "person1@company.com",
+            "importance": "High"
+          }
+        },
+        "type": "n8n-nodes-base.microsoftOutlook",
+        "typeVersion": 2,
+        "position": [
+          2432,
+          480
+        ],
+        "id": "66b359ba-679a-4fba-b89d-690d6baa6a8b",
+        "name": "Email: Accounts create manually2",
+        "webhookId": "07d09753-68de-4616-a1e0-d799cc0d5780",
+        "credentials": {
+          "microsoftOutlookOAuth2Api": {
+            "id": "azOFMTypy2ecR4Sk",
+            "name": "Your Name's Microsoft Outlook account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "724ca1cc-f503-44c4-a991-3fcee94ddaf8",
+                "leftValue": "={{ $('Hubspot: Get deal').item.json.properties.qwilr_proposal.value }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "exists",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          688,
+          -224
+        ],
+        "id": "fc29e28a-3c3e-4360-8a07-6d15493a46e9",
+        "name": "Is Qwilr proposal?"
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "={{ $('Config').first().json.SlackChannel }}",
+            "mode": "id"
+          },
+          "text": "={{ $('Hubspot: Get deal').first().json.properties.dealname.value }} signed the proposal for ${{ $('Hubspot: Get deal').first().json.properties.hs_forecast_amount.value }}\n\nNo Qwilr proposal was found, therefore no invoices were created - please create manually.\n\n<https://app.hubspot.com/contacts/[hubspot-portal-id]/record/0-3/{{ $('HubSpot Trigger').item.json.dealId }}|See deal on HubSpot>",
+          "otherOptions": {
+            "includeLinkToWorkflow": false
+          }
+        },
+        "id": "877282fd-d477-4024-8332-cdfa491fa5d5",
+        "name": "Slack: Deal won no Qwilr",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          1072,
+          240
+        ],
+        "webhookId": "07e52755-8323-4cbe-892c-2d86e72a7a65",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "select": "user",
+          "user": {
+            "__rl": true,
+            "value": "=U09HLUH7EFN",
+            "mode": "id"
+          },
+          "text": "=\u274c *Failed to create invoices for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\"* because no Qwilr proposal was found.\n\nProposal: {{ $('Hubspot: Get deal').first().json.properties.qwilr_proposal.value }}\n\nPlease create invoice(s) manually.",
+          "otherOptions": {
+            "includeLinkToWorkflow": false
+          }
+        },
+        "id": "bc9bcae1-3344-49be-be00-e4efa69eb0c5",
+        "name": "Slack: Error - no contact in HubSpot to accounting1",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.4,
+        "position": [
+          1296,
+          240
+        ],
+        "webhookId": "4eb8fd6e-7434-41d6-abdc-cdc47b163184",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "toRecipients": "accounts@yourcompany.com",
+          "subject": "=New deal, create invoices for: {{ $('Hubspot: Get deal').first().json.properties.dealname.value }}",
+          "bodyContent": "=\u274c *Failed to create invoice(s) for deal \"{{ $('Hubspot: Get deal').first().json.properties.dealname.value }}\" because no Qwilr proposal was found. Please check DocuSeal or ask the team for proposal.\n\nPlease create invoice(s) manually.",
+          "additionalFields": {
+            "ccRecipients": "person1@company.com",
+            "importance": "High"
+          }
+        },
+        "type": "n8n-nodes-base.microsoftOutlook",
+        "typeVersion": 2,
+        "position": [
+          1520,
+          240
+        ],
+        "id": "2421caae-2fe5-4e8a-b1a1-44c5613fbbd6",
+        "name": "Email: Accounts create manually4",
+        "webhookId": "07d09753-68de-4616-a1e0-d799cc0d5780",
+        "credentials": {
+          "microsoftOutlookOAuth2Api": {
+            "id": "azOFMTypy2ecR4Sk",
+            "name": "Your Name's Microsoft Outlook account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": false,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "8cb95adb-6176-4c92-8f97-2fac1cf29065",
+                "leftValue": "={{ $json.output }}",
+                "rightValue": "=CAP",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              },
+              {
+                "id": "709b2e27-776d-499b-8e85-cd6c7ede1e8c",
+                "leftValue": "={{ $json.output }}",
+                "rightValue": "Sales",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals",
+                  "name": "filter.operator.equals"
+                }
+              }
+            ],
+            "combinator": "or"
+          },
+          "options": {
+            "ignoreCase": true
+          }
+        },
+        "id": "189951a0-3bb5-4777-ba0d-a247eae75fc8",
+        "name": "Is CAP or Sales?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          448,
+          688
+        ]
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "=[slack-channel-id]",
+            "mode": "id"
+          },
+          "text": "=*{{ $('Define Engagement if Drata').item.json.dealname }}* signed!\nEngagement type: {{ $('Define Engagement if Drata').item.json.engagement }}\nFramework: {{ $json.framework }}",
+          "otherOptions": {
+            "includeLinkToWorkflow": false
+          }
+        },
+        "id": "d5fd90a7-2f09-4b34-9e0f-5dab2e8955ce",
+        "name": "Slack: Drata",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          720,
+          688
+        ],
+        "webhookId": "07e52755-8323-4cbe-892c-2d86e72a7a65",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const dealstage = $('Hubspot: Get deal').item.json.properties.dealstage.value;\nconst dealname = $('Hubspot: Get deal').item.json.properties.dealname?.value ?? '';\nconst framework = $('Hubspot: Get deal').item.json.properties.framework?.value ?? '';\nconst partner = $json.properties.partner?.value ?? '';\nconst engagement = $('Hubspot: Get deal').item.json.properties.engagement?.value ?? '';\n\nconst isCAP = dealstage === '1297403657';\nconst isSales = dealstage === '266058586';\nconst isDrata = partner.includes('Partner1');\n\nif (isDrata && isCAP) {\n  const engagementOutput = engagement || 'Accelerator Plan';\n  return [{ json: { output: 'CAP', engagement: engagementOutput, dealname, framework } }];\n}\n\nif (isDrata && isSales) {\n  const engagementOutput = engagement || 'Other Services';\n  return [{ json: { output: 'Sales', engagement: engagementOutput, dealname, framework } }];\n}\n\nreturn [{ json: { output: null, engagement: null, dealname, framework } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          240,
+          688
+        ],
+        "id": "cf087ccb-7288-421b-b58c-8923b69ddb98",
+        "name": "Define Engagement if Drata"
+      },
+      {
+        "parameters": {
+          "toRecipients": "accounts@yourcompany.com",
+          "subject": "=New deal and invoices for: {{ $('Hubspot: Get deal').first().json.properties.dealname.value }}",
+          "bodyContent": "=Deal is signed and all invoices were created for {{ $('Hubspot: Get deal').first().json.properties.dealname.value }}. \n\nPlease review the invoices against the proposal and submit as applicable.\n\nProposal: {{ $('Hubspot: Get deal').first().json.properties.qwilr_proposal.value }}\n\n{{ $('Code: Format Slack invoice message').item.json.emailMessage }}",
+          "additionalFields": {
+            "ccRecipients": "person1@company.com",
+            "importance": "High"
+          }
+        },
+        "type": "n8n-nodes-base.microsoftOutlook",
+        "typeVersion": 2,
+        "position": [
+          3536,
+          -96
+        ],
+        "id": "c821ea01-ce89-4595-85a4-1c8c4ff0d8b0",
+        "name": "Email: Accounts review",
+        "webhookId": "07d09753-68de-4616-a1e0-d799cc0d5780",
+        "credentials": {
+          "microsoftOutlookOAuth2Api": {
+            "id": "azOFMTypy2ecR4Sk",
+            "name": "Your Name's Microsoft Outlook account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "amount": 1,
+          "unit": "minutes"
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          -688,
+          144
+        ],
+        "id": "0b10f9e0-f4e2-4620-9702-488bc9a5823e",
+        "name": "Wait",
+        "webhookId": "2db95af4-e173-4610-999b-d7a508487406"
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "value": "6mtEQBbnBP2TaWjs",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/6mtEQBbnBP2TaWjs",
+            "cachedResultName": "YourCompany: SubWF Check + Add Line Items (CAP to AP Upsell)"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {},
+            "matchingColumns": [],
+            "schema": [],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": true
+          },
+          "options": {
+            "waitForSubWorkflow": true
+          }
+        },
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.3,
+        "position": [
+          624,
+          432
+        ],
+        "id": "dbbeb1d5-4f4c-4fb8-a4c0-9a90fc61051d",
+        "name": "Check + Add Line Items"
+      }
+    ],
+    "connections": {
+      "HubSpot Trigger": {
+        "main": [
+          [
+            {
+              "node": "Wait",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Config": {
+        "main": [
+          [
+            {
+              "node": "Hubspot: Get deal",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hubspot: Get deal": {
+        "main": [
+          [
+            {
+              "node": "Is test?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is test?": {
+        "main": [
+          [],
+          [
+            {
+              "node": "If: stage is proposal signed",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Define Engagement if Drata",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If: stage is proposal signed": {
+        "main": [
+          [
+            {
+              "node": "Is Qwilr proposal?",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Check + Add Line Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hubspot: Get line item IDs": {
+        "main": [
+          [
+            {
+              "node": "Code: Prepare line item batch request",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Prepare line item batch request": {
+        "main": [
+          [
+            {
+              "node": "Hubspot: Get line items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hubspot: Get line items": {
+        "main": [
+          [
+            {
+              "node": "Code: Validate line items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Validate line items": {
+        "main": [
+          [
+            {
+              "node": "If: Line items valid?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If: Line items valid?": {
+        "main": [
+          [
+            {
+              "node": "Merge: Line items + Contact ready",
+              "type": "main",
+              "index": 1
+            }
+          ],
+          [
+            {
+              "node": "Slack: Error - invalid line items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Slack: Error - invalid line items": {
+        "main": [
+          [
+            {
+              "node": "Slack: Error - invalid line items to accounting",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hubspot: Get contact": {
+        "main": [
+          [
+            {
+              "node": "Xero: Get contact",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If: Contact associated?": {
+        "main": [
+          [
+            {
+              "node": "Hubspot: Get contact",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Slack: Error - no contact in HubSpot",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Slack: Error - no contact in HubSpot": {
+        "main": [
+          [
+            {
+              "node": "Slack: Error - no contact in HubSpot to accounting",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Xero: Get contact": {
+        "main": [
+          [
+            {
+              "node": "If: Xero contact found?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If: Xero contact found?": {
+        "main": [
+          [
+            {
+              "node": "Merge: Line items + Contact ready",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Create a contact",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Slack: Error - no contact in Xero": {
+        "main": [
+          [
+            {
+              "node": "Slack: Error - no contact in Xero to accounting",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Merge: Line items + Contact ready": {
+        "main": [
+          [
+            {
+              "node": "Code: Prepare invoices",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Prepare invoices": {
+        "main": [
+          [
+            {
+              "node": "Xero: Create invoice(s)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Xero: Create invoice(s)": {
+        "main": [
+          [
+            {
+              "node": "Code: Format Slack invoice message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Format Slack invoice message": {
+        "main": [
+          [
+            {
+              "node": "Slack: Invoices",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Slack: Invoices": {
+        "main": [
+          [
+            {
+              "node": "Slack: Invoices to accounting",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Slack: Error - no contact in HubSpot to accounting": {
+        "main": [
+          [
+            {
+              "node": "Email: Accounts create manually",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Slack: Error - no contact in Xero to accounting": {
+        "main": [
+          [
+            {
+              "node": "Email: Accounts create manually1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Slack: Error - invalid line items to accounting": {
+        "main": [
+          [
+            {
+              "node": "Email: Accounts create manually2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Slack: Invoices to accounting": {
+        "main": [
+          [
+            {
+              "node": "Email: Accounts review",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Qwilr proposal?": {
+        "main": [
+          [
+            {
+              "node": "Slack: Deal won",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "If: Contact associated?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Slack: Deal won no Qwilr",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Slack: Error - no contact in HubSpot to accounting1": {
+        "main": [
+          [
+            {
+              "node": "Email: Accounts create manually4",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Slack: Deal won no Qwilr": {
+        "main": [
+          [
+            {
+              "node": "Slack: Error - no contact in HubSpot to accounting1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create a contact": {
+        "main": [
+          [
+            {
+              "node": "Xero: Get contact",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is CAP or Sales?": {
+        "main": [
+          [
+            {
+              "node": "Slack: Drata",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Define Engagement if Drata": {
+        "main": [
+          [
+            {
+              "node": "Is CAP or Sales?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait": {
+        "main": [
+          [
+            {
+              "node": "Config",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Check + Add Line Items": {
+        "main": [
+          [
+            {
+              "node": "Hubspot: Get line item IDs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Your Name",
+    "name": "Version b412a44d",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-05T16:56:18.056Z",
+        "id": 221,
+        "workflowId": "nE7KIYDBA84ra6CJLPvWm",
+        "versionId": "b412a44d-2668-4007-ad00-6cdcf40240e5",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      },
+      {
+        "createdAt": "2026-03-17T09:33:44.405Z",
+        "id": 249,
+        "workflowId": "nE7KIYDBA84ra6CJLPvWm",
+        "versionId": "b412a44d-2668-4007-ad00-6cdcf40240e5",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      },
+      {
+        "createdAt": "2026-03-17T09:33:42.819Z",
+        "id": 248,
+        "workflowId": "nE7KIYDBA84ra6CJLPvWm",
+        "versionId": "b412a44d-2668-4007-ad00-6cdcf40240e5",
+        "event": "deactivated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    ]
+  }
+}

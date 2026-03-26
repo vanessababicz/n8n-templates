@@ -1,0 +1,1225 @@
+{
+  "updatedAt": "2026-02-26T08:45:33.156Z",
+  "createdAt": "2026-02-24T13:59:26.125Z",
+  "id": "S5RRNYVNPxtqT1rv",
+  "name": "Brain: Daily News Digest",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 11,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "id": "node-schedule",
+      "name": "8am Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "node-telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        512
+      ],
+      "webhookId": "3bb19851-6082-44b8-b21a-74efa88a1dae",
+      "credentials": {
+        "telegramApi": {
+          "id": "A5mb1Ts6wYCACmrr",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "combinator": "or",
+                "options": {
+                  "version": 2,
+                  "caseSensitive": false,
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "news"
+                  },
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "briefing"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "yes"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      },
+      "id": "node-check-command",
+      "name": "Is News Command?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        224,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "chatId",
+              "type": "string",
+              "value": "={{ $json.message.chat.id }}"
+            },
+            {
+              "id": "c2",
+              "name": "trigger",
+              "type": "string",
+              "value": "manual"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-set-chat-id-manual",
+      "name": "Set Chat ID (manual)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "chatId",
+              "type": "string",
+              "value": "1984567776"
+            },
+            {
+              "id": "s2",
+              "name": "trigger",
+              "type": "string",
+              "value": "scheduled"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-set-chat-id-schedule",
+      "name": "Set Chat ID (scheduled)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=n8n+automation+workflow+AI+agents&hl=en-US&gl=US&ceid=US:en",
+        "options": {}
+      },
+      "id": "node-fetch-automation",
+      "name": "RSS: Automation & n8n",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=AI+LLM+models+agents+OpenAI+Anthropic+Google+DeepMind&hl=en-US&gl=US&ceid=US:en",
+        "options": {}
+      },
+      "id": "node-fetch-ai",
+      "name": "RSS: AI Landscape",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=personal+finance+investing+ETF+index+funds+stock+market&hl=en-US&gl=US&ceid=US:en",
+        "options": {}
+      },
+      "id": "node-fetch-finance",
+      "name": "RSS: Finance & Investing",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en-US&gl=US&ceid=US:en",
+        "options": {}
+      },
+      "id": "node-fetch-world",
+      "name": "RSS: World Breaking News",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1GPo2Y2FAQvWuXM9q_FBjDNJGb7UWQpvNO0qe2llcuAU",
+          "mode": "list",
+          "cachedResultName": "Brain: News Dedup Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GPo2Y2FAQvWuXM9q_FBjDNJGb7UWQpvNO0qe2llcuAU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Sheet1"
+        },
+        "options": {}
+      },
+      "id": "node-read-sheet",
+      "name": "Read Seen Articles",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        672,
+        752
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "node-merge",
+      "name": "Wait for All Feeds",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        912,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const automationItems = $('RSS: Automation & n8n').all().map(i => ({ ...i.json, topic: '\ud83d\udd27 Automation & n8n' }));\nconst aiItems = $('RSS: AI Landscape').all().map(i => ({ ...i.json, topic: '\ud83e\udd16 AI Landscape' }));\nconst financeItems = $('RSS: Finance & Investing').all().map(i => ({ ...i.json, topic: '\ud83d\udcb0 Finance & Investing' }));\nconst worldItems = $('RSS: World Breaking News').all().map(i => ({ ...i.json, topic: '\ud83c\udf0d World' }));\n\nconst seenRows = $('Read Seen Articles').all();\nconst seenUrls = new Set(seenRows.map(r => r.json.url).filter(Boolean));\n\nfunction pickFresh(items, max) {\n  return items.filter(i => i.link && !seenUrls.has(i.link)).slice(0, max);\n}\n\nconst fresh = [\n  ...pickFresh(automationItems, 3),\n  ...pickFresh(aiItems, 4),\n  ...pickFresh(financeItems, 2),\n  ...pickFresh(worldItems, 3),\n];\n\nconst chatId = $('Set Chat ID (scheduled)').all()[0]?.json?.chatId || $('Set Chat ID (manual)').all()[0]?.json?.chatId || '1984567776';\n\nif (fresh.length === 0) {\n  return [{ json: { message: '\u2705 No new news since last check.', newUrls: [], chatId } }];\n}\n\nconst grouped = {};\nfor (const item of fresh) {\n  if (!grouped[item.topic]) grouped[item.topic] = [];\n  grouped[item.topic].push(item);\n}\n\nconst now = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });\nlet msg = `\ud83d\udcf0 *Your News Digest \u2014 ${now}*\\n`;\n\nfor (const [topic, items] of Object.entries(grouped)) {\n  msg += `\\n${topic}\\n`;\n  for (const item of items) {\n    const title = (item.title || '').replace(/[*_`\\[\\]]/g, ' ').trim();\n    const source = (item.creator || item['dc:creator'] || '').trim();\n    msg += `\u2022 [${title}](${item.link})${source ? ' \u2014 ' + source : ''}\\n`;\n  }\n}\n\nconst newUrls = fresh.map(i => ({ url: i.link, title: (i.title || '').substring(0, 200), date: new Date().toISOString().split('T')[0] }));\n\nreturn [{ json: { message: msg, newUrls, chatId } }];"
+      },
+      "id": "node-process",
+      "name": "Filter & Format Digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "node-send-telegram",
+      "name": "Send Digest",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1360,
+        304
+      ],
+      "webhookId": "a577fae6-7a84-4204-a74b-87af85af466a",
+      "credentials": {
+        "telegramApi": {
+          "id": "A5mb1Ts6wYCACmrr",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "newUrls",
+        "options": {}
+      },
+      "id": "node-split-urls",
+      "name": "Split New URLs",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1GPo2Y2FAQvWuXM9q_FBjDNJGb7UWQpvNO0qe2llcuAU",
+          "mode": "list",
+          "cachedResultName": "Brain: News Dedup Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GPo2Y2FAQvWuXM9q_FBjDNJGb7UWQpvNO0qe2llcuAU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GPo2Y2FAQvWuXM9q_FBjDNJGb7UWQpvNO0qe2llcuAU/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "url": "={{ $json.url }}",
+            "title": "={{ $json.title }}",
+            "date": "={{ $json.date }}"
+          },
+          "schema": [
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string"
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-write-sheet",
+      "name": "Write Seen Articles",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1560,
+        512
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "8am Schedule": {
+      "main": [
+        [
+          {
+            "node": "Set Chat ID (scheduled)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Is News Command?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is News Command?": {
+      "main": [
+        [
+          {
+            "node": "Set Chat ID (manual)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Chat ID (manual)": {
+      "main": [
+        [
+          {
+            "node": "RSS: Automation & n8n",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS: AI Landscape",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS: Finance & Investing",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS: World Breaking News",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Seen Articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Chat ID (scheduled)": {
+      "main": [
+        [
+          {
+            "node": "RSS: Automation & n8n",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS: AI Landscape",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS: Finance & Investing",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS: World Breaking News",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Seen Articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS: Automation & n8n": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS: AI Landscape": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Feeds",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "RSS: Finance & Investing": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Feeds",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "RSS: World Breaking News": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Feeds",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Read Seen Articles": {
+      "main": [
+        [
+          {
+            "node": "Wait for All Feeds",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Wait for All Feeds": {
+      "main": [
+        [
+          {
+            "node": "Filter & Format Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter & Format Digest": {
+      "main": [
+        [
+          {
+            "node": "Send Digest",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Split New URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split New URLs": {
+      "main": [
+        [
+          {
+            "node": "Write Seen Articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": {
+    "node:8am Schedule": {
+      "recurrenceRules": []
+    }
+  },
+  "meta": null,
+  "pinData": {},
+  "versionId": "f85ab6e9-bd89-45bc-a5ef-29214adbb966",
+  "activeVersionId": "f85ab6e9-bd89-45bc-a5ef-29214adbb966",
+  "versionCounter": 55,
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-02-24T13:59:26.133Z",
+      "createdAt": "2026-02-24T13:59:26.133Z",
+      "role": "workflow:owner",
+      "workflowId": "S5RRNYVNPxtqT1rv",
+      "projectId": "1xouAt4QdWWhUWuM",
+      "project": {
+        "updatedAt": "2025-10-13T14:48:28.241Z",
+        "createdAt": "2025-10-13T14:47:21.362Z",
+        "id": "1xouAt4QdWWhUWuM",
+        "name": "Your Name <your-email@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-25T10:54:10.337Z",
+    "createdAt": "2026-02-25T10:54:10.337Z",
+    "versionId": "f85ab6e9-bd89-45bc-a5ef-29214adbb966",
+    "workflowId": "S5RRNYVNPxtqT1rv",
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "triggerAtHour": 11,
+                "triggerAtMinute": 30
+              }
+            ]
+          }
+        },
+        "id": "node-schedule",
+        "name": "8am Schedule",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          0,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "updates": [
+            "message"
+          ],
+          "additionalFields": {}
+        },
+        "id": "node-telegram-trigger",
+        "name": "Telegram Trigger",
+        "type": "n8n-nodes-base.telegramTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          0,
+          512
+        ],
+        "webhookId": "3bb19851-6082-44b8-b21a-74efa88a1dae",
+        "credentials": {
+          "telegramApi": {
+            "id": "A5mb1Ts6wYCACmrr",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "combinator": "or",
+                  "options": {
+                    "version": 2,
+                    "caseSensitive": false,
+                    "typeValidation": "loose"
+                  },
+                  "conditions": [
+                    {
+                      "operator": {
+                        "type": "string",
+                        "operation": "contains"
+                      },
+                      "leftValue": "={{ $json.message.text }}",
+                      "rightValue": "news"
+                    },
+                    {
+                      "operator": {
+                        "type": "string",
+                        "operation": "contains"
+                      },
+                      "leftValue": "={{ $json.message.text }}",
+                      "rightValue": "briefing"
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "yes"
+              }
+            ]
+          },
+          "options": {
+            "fallbackOutput": "none"
+          }
+        },
+        "id": "node-check-command",
+        "name": "Is News Command?",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.2,
+        "position": [
+          224,
+          512
+        ]
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "c1",
+                "name": "chatId",
+                "type": "string",
+                "value": "={{ $json.message.chat.id }}"
+              },
+              {
+                "id": "c2",
+                "name": "trigger",
+                "type": "string",
+                "value": "manual"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "node-set-chat-id-manual",
+        "name": "Set Chat ID (manual)",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          448,
+          512
+        ]
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "s1",
+                "name": "chatId",
+                "type": "string",
+                "value": "1984567776"
+              },
+              {
+                "id": "s2",
+                "name": "trigger",
+                "type": "string",
+                "value": "scheduled"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "node-set-chat-id-schedule",
+        "name": "Set Chat ID (scheduled)",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          224,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "url": "https://news.google.com/rss/search?q=n8n+automation+workflow+AI+agents&hl=en-US&gl=US&ceid=US:en",
+          "options": {}
+        },
+        "id": "node-fetch-automation",
+        "name": "RSS: Automation & n8n",
+        "type": "n8n-nodes-base.rssFeedRead",
+        "typeVersion": 1.1,
+        "position": [
+          672,
+          112
+        ]
+      },
+      {
+        "parameters": {
+          "url": "https://news.google.com/rss/search?q=AI+LLM+models+agents+OpenAI+Anthropic+Google+DeepMind&hl=en-US&gl=US&ceid=US:en",
+          "options": {}
+        },
+        "id": "node-fetch-ai",
+        "name": "RSS: AI Landscape",
+        "type": "n8n-nodes-base.rssFeedRead",
+        "typeVersion": 1.1,
+        "position": [
+          672,
+          272
+        ]
+      },
+      {
+        "parameters": {
+          "url": "https://news.google.com/rss/search?q=personal+finance+investing+ETF+index+funds+stock+market&hl=en-US&gl=US&ceid=US:en",
+          "options": {}
+        },
+        "id": "node-fetch-finance",
+        "name": "RSS: Finance & Investing",
+        "type": "n8n-nodes-base.rssFeedRead",
+        "typeVersion": 1.1,
+        "position": [
+          672,
+          432
+        ]
+      },
+      {
+        "parameters": {
+          "url": "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en-US&gl=US&ceid=US:en",
+          "options": {}
+        },
+        "id": "node-fetch-world",
+        "name": "RSS: World Breaking News",
+        "type": "n8n-nodes-base.rssFeedRead",
+        "typeVersion": 1.1,
+        "position": [
+          672,
+          592
+        ]
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "1GPo2Y2FAQvWuXM9q_FBjDNJGb7UWQpvNO0qe2llcuAU",
+            "mode": "list",
+            "cachedResultName": "Brain: News Dedup Tracker",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GPo2Y2FAQvWuXM9q_FBjDNJGb7UWQpvNO0qe2llcuAU/edit?usp=drivesdk"
+          },
+          "sheetName": {
+            "__rl": true,
+            "mode": "list",
+            "value": "Sheet1"
+          },
+          "options": {}
+        },
+        "id": "node-read-sheet",
+        "name": "Read Seen Articles",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          672,
+          752
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "mode": "append",
+          "options": {}
+        },
+        "id": "node-merge",
+        "name": "Wait for All Feeds",
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3,
+        "position": [
+          912,
+          432
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const automationItems = $('RSS: Automation & n8n').all().map(i => ({ ...i.json, topic: '\ud83d\udd27 Automation & n8n' }));\nconst aiItems = $('RSS: AI Landscape').all().map(i => ({ ...i.json, topic: '\ud83e\udd16 AI Landscape' }));\nconst financeItems = $('RSS: Finance & Investing').all().map(i => ({ ...i.json, topic: '\ud83d\udcb0 Finance & Investing' }));\nconst worldItems = $('RSS: World Breaking News').all().map(i => ({ ...i.json, topic: '\ud83c\udf0d World' }));\n\nconst seenRows = $('Read Seen Articles').all();\nconst seenUrls = new Set(seenRows.map(r => r.json.url).filter(Boolean));\n\nfunction pickFresh(items, max) {\n  return items.filter(i => i.link && !seenUrls.has(i.link)).slice(0, max);\n}\n\nconst fresh = [\n  ...pickFresh(automationItems, 3),\n  ...pickFresh(aiItems, 4),\n  ...pickFresh(financeItems, 2),\n  ...pickFresh(worldItems, 3),\n];\n\nconst chatId = $('Set Chat ID (scheduled)').all()[0]?.json?.chatId || $('Set Chat ID (manual)').all()[0]?.json?.chatId || '1984567776';\n\nif (fresh.length === 0) {\n  return [{ json: { message: '\u2705 No new news since last check.', newUrls: [], chatId } }];\n}\n\nconst grouped = {};\nfor (const item of fresh) {\n  if (!grouped[item.topic]) grouped[item.topic] = [];\n  grouped[item.topic].push(item);\n}\n\nconst now = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });\nlet msg = `\ud83d\udcf0 *Your News Digest \u2014 ${now}*\\n`;\n\nfor (const [topic, items] of Object.entries(grouped)) {\n  msg += `\\n${topic}\\n`;\n  for (const item of items) {\n    const title = (item.title || '').replace(/[*_`\\[\\]]/g, ' ').trim();\n    const source = (item.creator || item['dc:creator'] || '').trim();\n    msg += `\u2022 [${title}](${item.link})${source ? ' \u2014 ' + source : ''}\\n`;\n  }\n}\n\nconst newUrls = fresh.map(i => ({ url: i.link, title: (i.title || '').substring(0, 200), date: new Date().toISOString().split('T')[0] }));\n\nreturn [{ json: { message: msg, newUrls, chatId } }];"
+        },
+        "id": "node-process",
+        "name": "Filter & Format Digest",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1152,
+          432
+        ]
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $json.chatId }}",
+          "text": "={{ $json.message }}",
+          "additionalFields": {
+            "appendAttribution": false,
+            "parse_mode": "Markdown"
+          }
+        },
+        "id": "node-send-telegram",
+        "name": "Send Digest",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1360,
+          304
+        ],
+        "webhookId": "a577fae6-7a84-4204-a74b-87af85af466a",
+        "credentials": {
+          "telegramApi": {
+            "id": "A5mb1Ts6wYCACmrr",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "newUrls",
+          "options": {}
+        },
+        "id": "node-split-urls",
+        "name": "Split New URLs",
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          1360,
+          512
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "__rl": true,
+            "value": "1GPo2Y2FAQvWuXM9q_FBjDNJGb7UWQpvNO0qe2llcuAU",
+            "mode": "list",
+            "cachedResultName": "Brain: News Dedup Tracker",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GPo2Y2FAQvWuXM9q_FBjDNJGb7UWQpvNO0qe2llcuAU/edit?usp=drivesdk"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": "gid=0",
+            "mode": "list",
+            "cachedResultName": "Sheet1",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GPo2Y2FAQvWuXM9q_FBjDNJGb7UWQpvNO0qe2llcuAU/edit#gid=0"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "url": "={{ $json.url }}",
+              "title": "={{ $json.title }}",
+              "date": "={{ $json.date }}"
+            },
+            "schema": [
+              {
+                "id": "url",
+                "displayName": "url",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string"
+              },
+              {
+                "id": "title",
+                "displayName": "title",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string"
+              },
+              {
+                "id": "date",
+                "displayName": "date",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "node-write-sheet",
+        "name": "Write Seen Articles",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          1560,
+          512
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "8am Schedule": {
+        "main": [
+          [
+            {
+              "node": "Set Chat ID (scheduled)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Telegram Trigger": {
+        "main": [
+          [
+            {
+              "node": "Is News Command?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is News Command?": {
+        "main": [
+          [
+            {
+              "node": "Set Chat ID (manual)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Set Chat ID (manual)": {
+        "main": [
+          [
+            {
+              "node": "RSS: Automation & n8n",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "RSS: AI Landscape",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "RSS: Finance & Investing",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "RSS: World Breaking News",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Read Seen Articles",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Set Chat ID (scheduled)": {
+        "main": [
+          [
+            {
+              "node": "RSS: Automation & n8n",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "RSS: AI Landscape",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "RSS: Finance & Investing",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "RSS: World Breaking News",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Read Seen Articles",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "RSS: Automation & n8n": {
+        "main": [
+          [
+            {
+              "node": "Wait for All Feeds",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "RSS: AI Landscape": {
+        "main": [
+          [
+            {
+              "node": "Wait for All Feeds",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "RSS: Finance & Investing": {
+        "main": [
+          [
+            {
+              "node": "Wait for All Feeds",
+              "type": "main",
+              "index": 2
+            }
+          ]
+        ]
+      },
+      "RSS: World Breaking News": {
+        "main": [
+          [
+            {
+              "node": "Wait for All Feeds",
+              "type": "main",
+              "index": 3
+            }
+          ]
+        ]
+      },
+      "Read Seen Articles": {
+        "main": [
+          [
+            {
+              "node": "Wait for All Feeds",
+              "type": "main",
+              "index": 4
+            }
+          ]
+        ]
+      },
+      "Wait for All Feeds": {
+        "main": [
+          [
+            {
+              "node": "Filter & Format Digest",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Filter & Format Digest": {
+        "main": [
+          [
+            {
+              "node": "Send Digest",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Split New URLs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split New URLs": {
+        "main": [
+          [
+            {
+              "node": "Write Seen Articles",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Your Name",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-25T10:54:10.731Z",
+        "id": 98,
+        "workflowId": "S5RRNYVNPxtqT1rv",
+        "versionId": "f85ab6e9-bd89-45bc-a5ef-29214adbb966",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      },
+      {
+        "createdAt": "2026-02-25T10:54:40.144Z",
+        "id": 100,
+        "workflowId": "S5RRNYVNPxtqT1rv",
+        "versionId": "f85ab6e9-bd89-45bc-a5ef-29214adbb966",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      },
+      {
+        "createdAt": "2026-02-25T10:54:10.487Z",
+        "id": 97,
+        "workflowId": "S5RRNYVNPxtqT1rv",
+        "versionId": "f85ab6e9-bd89-45bc-a5ef-29214adbb966",
+        "event": "deactivated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      },
+      {
+        "createdAt": "2026-02-25T10:54:29.299Z",
+        "id": 99,
+        "workflowId": "S5RRNYVNPxtqT1rv",
+        "versionId": "f85ab6e9-bd89-45bc-a5ef-29214adbb966",
+        "event": "deactivated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    ]
+  }
+}

@@ -1,0 +1,1015 @@
+{
+  "updatedAt": "2026-02-16T10:47:50.775Z",
+  "createdAt": "2025-11-27T06:53:00.438Z",
+  "id": "1mcI1NeBAY0CA2qW",
+  "name": "YourCompany: Proposal signed > update Hubspot + Slack notification",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "docuseal-signed",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -192,
+        32
+      ],
+      "id": "56fcecf8-56f7-4f0d-b2fd-2f100658e648",
+      "name": "Webhook",
+      "webhookId": "7687e270-69f6-4710-ba78-b1f48e752c95"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "deal",
+        "operation": "search",
+        "filterGroupsUi": {
+          "filterGroupsValues": [
+            {
+              "filtersUi": {
+                "filterValues": [
+                  {
+                    "propertyName": "proposal_no_",
+                    "operator": "CONTAINS_TOKEN",
+                    "value": "={{ $json.ID }}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "properties": [
+            "amount",
+            "pipeline",
+            "dealname"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        32
+      ],
+      "id": "f62818da-ec7a-4c20-97be-c7a53011ee1a",
+      "name": "Search for deals",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "32ae9d14-acda-4078-a6ab-6b6243a23b3f",
+              "name": "ID",
+              "value": "={{ $json.body.data.documents[0].name.split(' - ')[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "0ab0bf81-6ef0-45d4-a9e5-6689e450b9c3",
+              "name": "proposal_date",
+              "value": "={{ $json.body.data.created_at }}",
+              "type": "string"
+            },
+            {
+              "id": "5dd1526a-af85-4630-b52e-9e5d0c46ce34",
+              "name": "sign_date",
+              "value": "={{ $json.body.data.completed_at }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        256,
+        32
+      ],
+      "id": "97fececd-84d1-4b70-80fd-c7d1ae4dd9da",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4a121c76-4dd0-4f67-978c-7d39799b06df",
+              "leftValue": "={{ $json.body.data.submission.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        32,
+        32
+      ],
+      "id": "70279a13-95da-450d-a5ef-b9603f229498",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.properties.pipeline }}",
+                    "rightValue": "default",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f6385ea8-8aed-45db-8d1d-700a5175c6d1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Sales Pipeline"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "8fd21dfa-5e9d-4ff9-b4e9-863d3436916f",
+                    "leftValue": "={{ $json.properties.pipeline }}",
+                    "rightValue": "750419291",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "CAP Pipeline"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "402b5fbd-cf54-4017-9664-4ea4bea3bc4b",
+                    "leftValue": "={{ $json.properties.pipeline }}",
+                    "rightValue": "820213778",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Renewal Pipeline"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        704,
+        16
+      ],
+      "id": "3c990687-a377-4833-a313-a147b013bdd5",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "[slack-channel-id]",
+          "mode": "list",
+          "cachedResultName": "sales-notifications"
+        },
+        "text": "={{ $('Search for deals').item.json.properties.dealname }} has just signed proposal {{ $('Edit Fields').item.json.ID }} for ${{ $('Search for deals').item.json.properties.amount }}!\n\n<https://app.hubspot.com/contacts/[hubspot-portal-id]/record/0-3/{{ $('Search for deals').item.json.id }}|See deal on Hubspot>",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1152,
+        32
+      ],
+      "id": "d36edfa3-62ff-4f6d-80c1-0392ab6da6f6",
+      "name": "Send a message",
+      "webhookId": "07e52755-8323-4cbe-892c-2d86e72a7a65",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "deal",
+        "operation": "update",
+        "dealId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "updateFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "proposal_date",
+                "value": "={{ new Date(new Date($('Webhook').item.json.body.data.completed_at).toISOString().split('T')[0]).getTime() }}"
+              },
+              {
+                "property": "latest_note",
+                "value": "={{ new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }}: Signed CAP proposal"
+              }
+            ]
+          },
+          "stage": "=1090810626"
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        928,
+        32
+      ],
+      "id": "4e9c6917-e2eb-4ef3-9f88-f086cb0fcde6",
+      "name": "CAP Pipeline",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "deal",
+        "operation": "update",
+        "dealId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "updateFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "proposal_date",
+                "value": "={{ new Date(new Date($('Webhook').item.json.body.data.completed_at).toISOString().split('T')[0]).getTime() }}"
+              },
+              {
+                "property": "latest_note",
+                "value": "={{ new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }}: Signed sales proposal"
+              }
+            ]
+          },
+          "stage": "=266058586"
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        928,
+        -160
+      ],
+      "id": "bc5e952a-2d7d-46a8-b4f4-eca27cd0c449",
+      "name": "Sales Pipeline",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "deal",
+        "operation": "update",
+        "dealId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "updateFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "proposal_date",
+                "value": "={{ new Date(new Date($('Webhook').item.json.body.data.completed_at).toISOString().split('T')[0]).getTime() }}"
+              },
+              {
+                "property": "latest_note",
+                "value": "={{ new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }}: Signed Renewal proposal"
+              }
+            ]
+          },
+          "stage": "=1211728151"
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        928,
+        224
+      ],
+      "id": "dfb35119-1a09-46a6-93fa-6c03c88b1d82",
+      "name": "Renewal Pipeline",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Search for deals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search for deals": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Sales Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CAP Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Renewal Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sales Pipeline": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Renewal Pipeline": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CAP Pipeline": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "ae2a509d-baa3-4b29-bf00-8b599e6bd57b",
+  "activeVersionId": "ae2a509d-baa3-4b29-bf00-8b599e6bd57b",
+  "versionCounter": 59,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2025-11-27T06:53:00.442Z",
+      "createdAt": "2025-11-27T06:53:00.442Z",
+      "role": "workflow:owner",
+      "workflowId": "1mcI1NeBAY0CA2qW",
+      "projectId": "1xouAt4QdWWhUWuM",
+      "project": {
+        "updatedAt": "2025-10-13T14:48:28.241Z",
+        "createdAt": "2025-10-13T14:47:21.362Z",
+        "id": "1xouAt4QdWWhUWuM",
+        "name": "Your Name <your-email@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-16T10:47:52.000Z",
+    "createdAt": "2026-02-16T10:47:50.776Z",
+    "versionId": "ae2a509d-baa3-4b29-bf00-8b599e6bd57b",
+    "workflowId": "1mcI1NeBAY0CA2qW",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "docuseal-signed",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -192,
+          32
+        ],
+        "id": "56fcecf8-56f7-4f0d-b2fd-2f100658e648",
+        "name": "Webhook",
+        "webhookId": "7687e270-69f6-4710-ba78-b1f48e752c95"
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "deal",
+          "operation": "search",
+          "filterGroupsUi": {
+            "filterGroupsValues": [
+              {
+                "filtersUi": {
+                  "filterValues": [
+                    {
+                      "propertyName": "proposal_no_",
+                      "operator": "CONTAINS_TOKEN",
+                      "value": "={{ $json.ID }}"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "additionalFields": {
+            "properties": [
+              "amount",
+              "pipeline",
+              "dealname"
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          480,
+          32
+        ],
+        "id": "f62818da-ec7a-4c20-97be-c7a53011ee1a",
+        "name": "Search for deals",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "32ae9d14-acda-4078-a6ab-6b6243a23b3f",
+                "name": "ID",
+                "value": "={{ $json.body.data.documents[0].name.split(' - ')[0] }}",
+                "type": "string"
+              },
+              {
+                "id": "0ab0bf81-6ef0-45d4-a9e5-6689e450b9c3",
+                "name": "proposal_date",
+                "value": "={{ $json.body.data.created_at }}",
+                "type": "string"
+              },
+              {
+                "id": "5dd1526a-af85-4630-b52e-9e5d0c46ce34",
+                "name": "sign_date",
+                "value": "={{ $json.body.data.completed_at }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          256,
+          32
+        ],
+        "id": "97fececd-84d1-4b70-80fd-c7d1ae4dd9da",
+        "name": "Edit Fields"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "4a121c76-4dd0-4f67-978c-7d39799b06df",
+                "leftValue": "={{ $json.body.data.submission.status }}",
+                "rightValue": "completed",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          32,
+          32
+        ],
+        "id": "70279a13-95da-450d-a5ef-b9603f229498",
+        "name": "If"
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.properties.pipeline }}",
+                      "rightValue": "default",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "id": "f6385ea8-8aed-45db-8d1d-700a5175c6d1"
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "Sales Pipeline"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "8fd21dfa-5e9d-4ff9-b4e9-863d3436916f",
+                      "leftValue": "={{ $json.properties.pipeline }}",
+                      "rightValue": "750419291",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals",
+                        "name": "filter.operator.equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "CAP Pipeline"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "402b5fbd-cf54-4017-9664-4ea4bea3bc4b",
+                      "leftValue": "={{ $json.properties.pipeline }}",
+                      "rightValue": "820213778",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals",
+                        "name": "filter.operator.equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "Renewal Pipeline"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.3,
+        "position": [
+          704,
+          16
+        ],
+        "id": "3c990687-a377-4833-a313-a147b013bdd5",
+        "name": "Switch"
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "[slack-channel-id]",
+            "mode": "list",
+            "cachedResultName": "sales-notifications"
+          },
+          "text": "={{ $('Search for deals').item.json.properties.dealname }} has just signed proposal {{ $('Edit Fields').item.json.ID }} for ${{ $('Search for deals').item.json.properties.amount }}!\n\n<https://app.hubspot.com/contacts/[hubspot-portal-id]/record/0-3/{{ $('Search for deals').item.json.id }}|See deal on Hubspot>",
+          "otherOptions": {
+            "includeLinkToWorkflow": false
+          }
+        },
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          1152,
+          32
+        ],
+        "id": "d36edfa3-62ff-4f6d-80c1-0392ab6da6f6",
+        "name": "Send a message",
+        "webhookId": "07e52755-8323-4cbe-892c-2d86e72a7a65",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "deal",
+          "operation": "update",
+          "dealId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "updateFields": {
+            "customPropertiesUi": {
+              "customPropertiesValues": [
+                {
+                  "property": "proposal_date",
+                  "value": "={{ new Date(new Date($('Webhook').item.json.body.data.completed_at).toISOString().split('T')[0]).getTime() }}"
+                },
+                {
+                  "property": "latest_note",
+                  "value": "={{ new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }}: Signed CAP proposal"
+                }
+              ]
+            },
+            "stage": "=1090810626"
+          }
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          928,
+          32
+        ],
+        "id": "4e9c6917-e2eb-4ef3-9f88-f086cb0fcde6",
+        "name": "CAP Pipeline",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "deal",
+          "operation": "update",
+          "dealId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "updateFields": {
+            "customPropertiesUi": {
+              "customPropertiesValues": [
+                {
+                  "property": "proposal_date",
+                  "value": "={{ new Date(new Date($('Webhook').item.json.body.data.completed_at).toISOString().split('T')[0]).getTime() }}"
+                },
+                {
+                  "property": "latest_note",
+                  "value": "={{ new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }}: Signed sales proposal"
+                }
+              ]
+            },
+            "stage": "=266058586"
+          }
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          928,
+          -160
+        ],
+        "id": "bc5e952a-2d7d-46a8-b4f4-eca27cd0c449",
+        "name": "Sales Pipeline",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "deal",
+          "operation": "update",
+          "dealId": {
+            "__rl": true,
+            "value": "={{ $json.id }}",
+            "mode": "id"
+          },
+          "updateFields": {
+            "customPropertiesUi": {
+              "customPropertiesValues": [
+                {
+                  "property": "proposal_date",
+                  "value": "={{ new Date(new Date($('Webhook').item.json.body.data.completed_at).toISOString().split('T')[0]).getTime() }}"
+                },
+                {
+                  "property": "latest_note",
+                  "value": "={{ new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }}: Signed Renewal proposal"
+                }
+              ]
+            },
+            "stage": "=1211728151"
+          }
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          928,
+          224
+        ],
+        "id": "dfb35119-1a09-46a6-93fa-6c03c88b1d82",
+        "name": "Renewal Pipeline",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "If",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Edit Fields": {
+        "main": [
+          [
+            {
+              "node": "Search for deals",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If": {
+        "main": [
+          [
+            {
+              "node": "Edit Fields",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Search for deals": {
+        "main": [
+          [
+            {
+              "node": "Switch",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Switch": {
+        "main": [
+          [
+            {
+              "node": "Sales Pipeline",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "CAP Pipeline",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Renewal Pipeline",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sales Pipeline": {
+        "main": [
+          [
+            {
+              "node": "Send a message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Renewal Pipeline": {
+        "main": [
+          [
+            {
+              "node": "Send a message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "CAP Pipeline": {
+        "main": [
+          [
+            {
+              "node": "Send a message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Your Name",
+    "name": "remove trailing zeros on amt",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-16T10:47:52.747Z",
+        "id": 29,
+        "workflowId": "1mcI1NeBAY0CA2qW",
+        "versionId": "ae2a509d-baa3-4b29-bf00-8b599e6bd57b",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    ]
+  }
+}

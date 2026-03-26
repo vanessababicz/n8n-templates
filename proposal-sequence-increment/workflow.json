@@ -1,0 +1,974 @@
+{
+  "updatedAt": "2026-03-10T11:16:02.034Z",
+  "createdAt": "2026-02-25T10:11:32.361Z",
+  "id": "4EyaFYpThKhKAjuL",
+  "name": "YourCompany: Proposal Sequence Increment",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "proposal-seq-increment",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook - Qwilr Proposal Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        192
+      ],
+      "webhookId": "5f6ad4a3-5d5c-499f-ae31-d5321000da11"
+    },
+    {
+      "parameters": {
+        "url": "https://api.hubapi.com/crm/v3/objects/deals?limit=1&properties=seq",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "options": {}
+      },
+      "id": "http-get-seq",
+      "name": "Get Current Seq",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        288
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "deal",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        1136,
+        288
+      ],
+      "id": "4766ea41-45c8-4bb2-939d-dbd87b2752fd",
+      "name": "Get many deals",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bc2128c0-5139-4589-b96e-8067330ccb70",
+              "name": "seq",
+              "value": "={{ \"AT-\" + (parseInt($('Get Current Seq').first().json.results[0].properties.seq.replace(\"AT-\", \"\")) + 1) }}",
+              "type": "string"
+            },
+            {
+              "id": "bad86fa8-e700-48b1-a49f-95ecb2fc7c1c",
+              "name": "dealId",
+              "value": "={{ $json.dealId }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1360,
+        288
+      ],
+      "id": "cccd8364-06f7-4ac2-be6c-635e637ca761",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect all items from Edit Fields and chunk into batches of 100\nconst allItems = $input.all();\nconst newSeq = allItems[0].json.seq;\nconst batchSize = 100;\nconst batches = [];\n\nfor (let i = 0; i < allItems.length; i += batchSize) {\n  const chunk = allItems.slice(i, i + batchSize);\n  const inputs = chunk.map(item => ({\n    id: String(item.json.dealId),\n    properties: { seq: newSeq }\n  }));\n  batches.push({ json: { inputs } });\n}\n\nreturn batches;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        288
+      ],
+      "id": "chunk-batches",
+      "name": "Chunk Into Batches of 100"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1808,
+        288
+      ],
+      "id": "split-batches",
+      "name": "Loop Over Batches"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/deals/batch/update",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ inputs: $json.inputs }) }}",
+        "options": {}
+      },
+      "id": "http-batch-update",
+      "name": "Batch Update Deals",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2032,
+        288
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "4c1e5463-4bab-403c-982d-48949d1fd1ac",
+                    "leftValue": "={{ $json.body[0].subscriptionType }}",
+                    "rightValue": "deal.creation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Deal Created"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b0698fa6-ee60-4feb-b8bf-dd8e154c1a25",
+                    "leftValue": "={{ $json.body[0].subscriptionType }}",
+                    "rightValue": "deal.propertyChange",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Proposal Created"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body[0].objectId }}",
+                    "rightValue": 54609937664,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "fd953e07-6018-4f5c-be94-85767f7b07cf"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Test"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        176
+      ],
+      "id": "af99b6fe-d34b-4bb3-9ffa-a7ab9d002aa6",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "deal",
+        "operation": "update",
+        "dealId": {
+          "__rl": true,
+          "value": "={{ $('Switch').item.json.body[0].objectId }}",
+          "mode": "id"
+        },
+        "updateFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "seq",
+                "value": "={{ $json.results[0].properties.seq }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        912,
+        96
+      ],
+      "id": "b349571c-84e3-40ec-a05e-634d42b5e14f",
+      "name": "Update a deal",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.hubapi.com/crm/v3/objects/deals?limit=1&properties=seq",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "options": {}
+      },
+      "id": "57d4feeb-7f64-4dec-8c31-3df88427a7da",
+      "name": "Get Current Seq1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        96
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "deal",
+        "operation": "update",
+        "dealId": {
+          "__rl": true,
+          "value": "={{ $('Webhook - Qwilr Proposal Trigger').item.json.body[0].objectId }}",
+          "mode": "id"
+        },
+        "updateFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "proposal_no_",
+                "value": "={{ $json.results[0].properties.seq }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        928,
+        288
+      ],
+      "id": "9181d024-8eb8-4d2d-bc36-c4abcd7e84b4",
+      "name": "Update deal Proposal No.",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Qwilr Proposal Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Current Seq": {
+      "main": [
+        [
+          {
+            "node": "Update deal Proposal No.",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many deals": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Chunk Into Batches of 100",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk Into Batches of 100": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Batches": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Batch Update Deals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Update Deals": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Get Current Seq1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Current Seq",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Update a deal": {
+      "main": [
+        []
+      ]
+    },
+    "Get Current Seq1": {
+      "main": [
+        [
+          {
+            "node": "Update a deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update deal Proposal No.": {
+      "main": [
+        [
+          {
+            "node": "Get many deals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Berlin",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "1aeae3b2-9fe8-4d9e-863e-cacb6ab501ae",
+  "activeVersionId": "1aeae3b2-9fe8-4d9e-863e-cacb6ab501ae",
+  "versionCounter": 276,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-25T10:11:32.383Z",
+      "createdAt": "2026-02-25T10:11:32.383Z",
+      "role": "workflow:owner",
+      "workflowId": "4EyaFYpThKhKAjuL",
+      "projectId": "1xouAt4QdWWhUWuM",
+      "project": {
+        "updatedAt": "2025-10-13T14:48:28.241Z",
+        "createdAt": "2025-10-13T14:47:21.362Z",
+        "id": "1xouAt4QdWWhUWuM",
+        "name": "Your Name <your-email@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-10T11:16:11.000Z",
+    "createdAt": "2026-03-10T11:14:22.450Z",
+    "versionId": "1aeae3b2-9fe8-4d9e-863e-cacb6ab501ae",
+    "workflowId": "4EyaFYpThKhKAjuL",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "proposal-seq-increment",
+          "options": {}
+        },
+        "id": "webhook-1",
+        "name": "Webhook - Qwilr Proposal Trigger",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          240,
+          192
+        ],
+        "webhookId": "5f6ad4a3-5d5c-499f-ae31-d5321000da11"
+      },
+      {
+        "parameters": {
+          "url": "https://api.hubapi.com/crm/v3/objects/deals?limit=1&properties=seq",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "hubspotAppToken",
+          "options": {}
+        },
+        "id": "http-get-seq",
+        "name": "Get Current Seq",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          720,
+          288
+        ],
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "deal",
+          "operation": "getAll",
+          "returnAll": true,
+          "filters": {}
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          1136,
+          288
+        ],
+        "id": "4766ea41-45c8-4bb2-939d-dbd87b2752fd",
+        "name": "Get many deals",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "bc2128c0-5139-4589-b96e-8067330ccb70",
+                "name": "seq",
+                "value": "={{ \"AT-\" + (parseInt($('Get Current Seq').first().json.results[0].properties.seq.replace(\"AT-\", \"\")) + 1) }}",
+                "type": "string"
+              },
+              {
+                "id": "bad86fa8-e700-48b1-a49f-95ecb2fc7c1c",
+                "name": "dealId",
+                "value": "={{ $json.dealId }}",
+                "type": "number"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1360,
+          288
+        ],
+        "id": "cccd8364-06f7-4ac2-be6c-635e637ca761",
+        "name": "Edit Fields"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Collect all items from Edit Fields and chunk into batches of 100\nconst allItems = $input.all();\nconst newSeq = allItems[0].json.seq;\nconst batchSize = 100;\nconst batches = [];\n\nfor (let i = 0; i < allItems.length; i += batchSize) {\n  const chunk = allItems.slice(i, i + batchSize);\n  const inputs = chunk.map(item => ({\n    id: String(item.json.dealId),\n    properties: { seq: newSeq }\n  }));\n  batches.push({ json: { inputs } });\n}\n\nreturn batches;"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1584,
+          288
+        ],
+        "id": "chunk-batches",
+        "name": "Chunk Into Batches of 100"
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitInBatches",
+        "typeVersion": 3,
+        "position": [
+          1808,
+          288
+        ],
+        "id": "split-batches",
+        "name": "Loop Over Batches"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.hubapi.com/crm/v3/objects/deals/batch/update",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "hubspotAppToken",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ inputs: $json.inputs }) }}",
+          "options": {}
+        },
+        "id": "http-batch-update",
+        "name": "Batch Update Deals",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2032,
+          288
+        ],
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "id": "4c1e5463-4bab-403c-982d-48949d1fd1ac",
+                      "leftValue": "={{ $json.body[0].subscriptionType }}",
+                      "rightValue": "deal.creation",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals",
+                        "name": "filter.operator.equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "Deal Created"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "id": "b0698fa6-ee60-4feb-b8bf-dd8e154c1a25",
+                      "leftValue": "={{ $json.body[0].subscriptionType }}",
+                      "rightValue": "deal.propertyChange",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals",
+                        "name": "filter.operator.equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "Proposal Created"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.body[0].objectId }}",
+                      "rightValue": 54609937664,
+                      "operator": {
+                        "type": "number",
+                        "operation": "equals"
+                      },
+                      "id": "fd953e07-6018-4f5c-be94-85767f7b07cf"
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "Test"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.4,
+        "position": [
+          464,
+          176
+        ],
+        "id": "af99b6fe-d34b-4bb3-9ffa-a7ab9d002aa6",
+        "name": "Switch"
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "deal",
+          "operation": "update",
+          "dealId": {
+            "__rl": true,
+            "value": "={{ $('Switch').item.json.body[0].objectId }}",
+            "mode": "id"
+          },
+          "updateFields": {
+            "customPropertiesUi": {
+              "customPropertiesValues": [
+                {
+                  "property": "seq",
+                  "value": "={{ $json.results[0].properties.seq }}"
+                }
+              ]
+            }
+          }
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          912,
+          96
+        ],
+        "id": "b349571c-84e3-40ec-a05e-634d42b5e14f",
+        "name": "Update a deal",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "url": "https://api.hubapi.com/crm/v3/objects/deals?limit=1&properties=seq",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "hubspotAppToken",
+          "options": {}
+        },
+        "id": "57d4feeb-7f64-4dec-8c31-3df88427a7da",
+        "name": "Get Current Seq1",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          688,
+          96
+        ],
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "deal",
+          "operation": "update",
+          "dealId": {
+            "__rl": true,
+            "value": "={{ $('Webhook - Qwilr Proposal Trigger').item.json.body[0].objectId }}",
+            "mode": "id"
+          },
+          "updateFields": {
+            "customPropertiesUi": {
+              "customPropertiesValues": [
+                {
+                  "property": "proposal_no_",
+                  "value": "={{ $json.results[0].properties.seq }}"
+                }
+              ]
+            }
+          }
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          928,
+          288
+        ],
+        "id": "9181d024-8eb8-4d2d-bc36-c4abcd7e84b4",
+        "name": "Update deal Proposal No.",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook - Qwilr Proposal Trigger": {
+        "main": [
+          [
+            {
+              "node": "Switch",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Current Seq": {
+        "main": [
+          [
+            {
+              "node": "Update deal Proposal No.",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get many deals": {
+        "main": [
+          [
+            {
+              "node": "Edit Fields",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Edit Fields": {
+        "main": [
+          [
+            {
+              "node": "Chunk Into Batches of 100",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Chunk Into Batches of 100": {
+        "main": [
+          [
+            {
+              "node": "Loop Over Batches",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Loop Over Batches": {
+        "main": [
+          [],
+          [
+            {
+              "node": "Batch Update Deals",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Batch Update Deals": {
+        "main": [
+          [
+            {
+              "node": "Loop Over Batches",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Switch": {
+        "main": [
+          [
+            {
+              "node": "Get Current Seq1",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Get Current Seq",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Update a deal": {
+        "main": [
+          []
+        ]
+      },
+      "Get Current Seq1": {
+        "main": [
+          [
+            {
+              "node": "Update a deal",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update deal Proposal No.": {
+        "main": [
+          [
+            {
+              "node": "Get many deals",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Your Name",
+    "name": "put proposal number on hubspot deal",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-10T11:16:11.322Z",
+        "id": 237,
+        "workflowId": "4EyaFYpThKhKAjuL",
+        "versionId": "1aeae3b2-9fe8-4d9e-863e-cacb6ab501ae",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    ]
+  }
+}

@@ -1,0 +1,4147 @@
+{
+  "updatedAt": "2026-03-26T12:59:49.477Z",
+  "createdAt": "2026-03-25T11:32:58.877Z",
+  "id": "1OF0BsJyx3uM3kms",
+  "name": "YourCompany: Teams Recordings \u2192 SharePoint",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "daysInterval": 2
+            }
+          ]
+        }
+      },
+      "id": "cf5801e7-1426-46af-8607-f10c8d612474",
+      "name": "Schedule Trigger (Every 2 Days)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        2000,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://login.microsoftonline.com/f4acf7a3-3986-4e90-8763-81b2528c92d6/oauth2/v2.0/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client_id",
+              "value": "5323a07a-dafe-4cbc-8449-745a24b05d0c"
+            },
+            {
+              "name": "client_secret",
+              "value": "[your-azure-client-secret]"
+            },
+            {
+              "name": "scope",
+              "value": "https://graph.microsoft.com/.default"
+            },
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1940e2f6-2c98-4ca3-839d-232707dc8360",
+      "name": "Get Token A (Renewal)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2224,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const expirationDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);\nreturn [{\n  json: {\n    changeType: 'created,updated',\n    notificationUrl: 'https://[your-n8n-domain]/webhook/teams-recordings',\n    resource: 'communications/callRecords',\n    expirationDateTime: expirationDate.toISOString(),\n    clientState: 'yourcompanyRecordings2026'\n  }\n}];"
+      },
+      "id": "77c94a77-a138-440a-b1b1-09241ad5fcc7",
+      "name": "Build Subscription Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2448,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.microsoft.com/v1.0/subscriptions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "81bf7982-28db-47ec-95aa-693d03a290c2",
+      "name": "List Existing Subscriptions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2672,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const subs = $input.first().json.value || [];\nconst callRecordSubs = subs.filter(s => s.resource === 'communications/callRecords');\nif (callRecordSubs.length === 0) return [{ json: { noSubsToDelete: true } }];\nreturn callRecordSubs.map(s => ({ json: { subscriptionId: s.id } }));"
+      },
+      "id": "166740f1-2547-4fe7-ad18-5f0f8b0b4576",
+      "name": "Filter Old Subs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2896,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-has-subs",
+              "leftValue": "={{ $json.noSubsToDelete }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "88633dbc-861e-4b60-9e2c-d5ae990df233",
+      "name": "Has Subs to Delete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3120,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://graph.microsoft.com/v1.0/subscriptions/{{ $json.subscriptionId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "266845ef-26f5-4170-aab0-c4751c0ff08b",
+      "name": "Delete Old Subscription",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3344,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.microsoft.com/v1.0/subscriptions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Build Subscription Payload').item.json }}",
+        "options": {}
+      },
+      "id": "aff71b2a-f8a6-4297-93ee-89554a11c39a",
+      "name": "Register Graph Subscription",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3568,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query.validationToken || 'OK' }}",
+        "options": {}
+      },
+      "id": "11fde5ac-6fd1-4492-b703-ae6a1c0edbf1",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2144,
+        -496
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Stop if it's just a validation handshake\nif ($input.first().json.query?.validationToken) return [];\n\nconst notification = $input.first().json.body?.value?.[0];\nif (!notification) return [];\n\n// Only process callRecords notifications\nif (!notification.resource?.startsWith('communications/callRecords')) return [];\n\nconst callId = notification.resourceData?.id || notification.resource?.split('/').pop();\n\n// Dedup using static data\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.processedIds) staticData.processedIds = [];\n\n// Remove the Test call ID so it can be reprocessed\nstaticData.processedIds = staticData.processedIds.filter(id => id !== callId);\n\n// Now check and add\nif (staticData.processedIds.includes(callId)) return [];\nstaticData.processedIds.push(callId);\nif (staticData.processedIds.length > 100) {\n  staticData.processedIds = staticData.processedIds.slice(-100);\n}\n\nreturn [{ json: { callId, clientState: notification.clientState } }];"
+      },
+      "id": "f5718b15-8962-43f0-b541-f679671588d7",
+      "name": "Validate & Filter Notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2144,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://login.microsoftonline.com/f4acf7a3-3986-4e90-8763-81b2528c92d6/oauth2/v2.0/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client_id",
+              "value": "5323a07a-dafe-4cbc-8449-745a24b05d0c"
+            },
+            {
+              "name": "client_secret",
+              "value": "[your-azure-client-secret]"
+            },
+            {
+              "name": "scope",
+              "value": "https://graph.microsoft.com/.default"
+            },
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "260e4e5b-07bb-4661-8d92-c4e1fa56aa6e",
+      "name": "Get Token A",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2368,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.microsoft.com/v1.0/communications/callRecords/{{ $('Validate & Filter Notification').item.json.callId }}?$expand=sessions($expand=segments)",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e0733672-9a17-4721-b10c-5396620928c4",
+      "name": "Get Call Record",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2592,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sales-emails",
+              "name": "salesEmails",
+              "value": "person1@company.com,team@company.com,person2@company.com",
+              "type": "string"
+            },
+            {
+              "id": "slack-channel",
+              "name": "slackChannel",
+              "value": "[slack-channel-id]",
+              "type": "string"
+            },
+            {
+              "id": "recordings-user",
+              "name": "recordingsUser",
+              "value": "team@company.com",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "cd521f48-a76f-4e40-9382-1f8db33c37af",
+      "name": "Sales Emails",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3040,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const callRecord = $('Get Call Record').first().json;\nconst organizer = $('Get Organizer Profile').first().json;\nconst orgEmail = (organizer.mail || organizer.userPrincipalName || '').toLowerCase();\nconst orgName = organizer.displayName || '';\nconst orgUserId = callRecord.organizer?.user?.id || '';\n\nconst salesList = $input.first().json.salesEmails.split(',').map(e => e.trim().toLowerCase());\nconst isSales = salesList.some(e => orgEmail.includes(e));\nconst targetFolder = isSales ? 'Sales' : 'Operations';\n\n// Extract attendee DISPLAY NAMES from participants (skip organizer and bots)\nconst participants = callRecord.participants || [];\nconst attendeeNames = [];\nfor (const p of participants) {\n  const name = p.user?.displayName || p.guest?.displayName || '';\n  if (!name || name === 'Guest user' || name === orgName) continue;\n  if (salesList.some(e => name.toLowerCase().includes(e.split('@')[0]))) continue;\n  attendeeNames.push(name);\n}\n\nconst token = $('Get Token A').first().json.access_token;\nconst recordingsUser = $input.first().json.recordingsUser || 'team@company.com';\n\nreturn [{\n  json: {\n    ...($input.first().json),\n    isSales,\n    targetFolder,\n    orgEmail,\n    orgName,\n    orgUserId,\n    recordingsUser,\n    attendeeNames,\n    callStart: callRecord.startDateTime,\n    callEnd: callRecord.endDateTime,\n    joinWebUrl: callRecord.joinWebUrl || '',\n    token\n  }\n}];"
+      },
+      "id": "72737a27-9651-4f4f-8ac4-01a7a17cf328",
+      "name": "Classify Call",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3264,
+        -304
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "9bc65370-17cc-4bc8-805c-46d5cb179124",
+      "name": "Wait 5s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1968,
+        -16
+      ],
+      "webhookId": "7c889e85-63d1-422f-8fb8-b57bf8ad976b"
+    },
+    {
+      "parameters": {
+        "url": "https://graph.microsoft.com/v1.0/sites/yourcompany220.sharepoint.com,5c32d42c-3cda-4bd9-a8d0-47c55e1c257a,6ac24238-8b10-49ca-88eb-e2708ae3516d/drive",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "24ce6fc9-4308-4f30-9aeb-750dc4d06df3",
+      "name": "Get SharePoint Drive",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.microsoft.com/v1.0/users/{{ $('Classify Call').first().json.orgEmail }}/drive/root/children",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "806d9dbd-8231-4079-bd2d-9e13a7a0f913",
+      "name": "Get Recordings Folder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2864,
+        -16
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Extract Meeting Info').first().json;\nconst items = $input.first().json.value || [];\nconst subject = (ctx.meetingSubject || '').toLowerCase();\n\nconst files = items.filter(item => {\n  if (!item.file) return false;\n  const name = (item.name || '').toLowerCase();\n  // Match full subject against filename (before the date stamp)\n  if (subject && name.includes(subject)) return true;\n  return false;\n});\n\nif (files.length === 0) return [];\n\nreturn files.map(f => ({\n  json: {\n    ...ctx,\n    fileId: f.id,\n    fileName: f.name,\n    fileSize: f.size,\n    fileCreated: f.createdDateTime,\n    fileOwnerEmail: ctx.orgEmail || ctx.recordingsUser || 'team@company.com'\n  }\n}));"
+      },
+      "id": "6d5d74d3-52d9-420c-ab37-3ef0224030af",
+      "name": "Filter New Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3536,
+        -16
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-has-file",
+              "leftValue": "={{ $input.first().json.fileId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "192dc038-632e-42c2-8cd4-b9cded934513",
+      "name": "Has Files?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3760,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "e6067253-a9ae-4161-b646-18b605de89d3",
+      "name": "Split in Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        3984,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const spDriveId = $('Get SharePoint Drive').first().json.id;\nconst items = $input.all();\n\nreturn items.map(item => {\n  const d = item.json;\n  return {\n    json: {\n      ...d,\n      copyBody: {\n        parentReference: {\n          driveId: spDriveId,\n          path: '/root:/Meetings Recordings/' + d.targetFolder\n        },\n        \"@microsoft.graph.conflictBehavior\": \"replace\",\n        name: d.fileName\n      }\n    }\n  };\n});"
+      },
+      "id": "342ee9ff-d2a8-496a-970a-fcdff20ed337",
+      "name": "Prepare Copy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4208,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.microsoft.com/v1.0/users/{{ $json.fileOwnerEmail }}/drive/items/{{ $json.fileId }}/copy",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            },
+            {
+              "name": "Prefer",
+              "value": "respond-async"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.copyBody }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "d6b5f451-c9d4-4797-b81d-b8a3680f4b25",
+      "name": "Copy to SharePoint",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4432,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  const d = item.json;\n  const monitorUrl = d.headers?.location || d.headers?.Location;\n  const fileId = $('Prepare Copy').first().json.fileId;\n  const token = $('Prepare Copy').first().json.token;\n  const fileOwnerEmail = $('Prepare Copy').first().json.fileOwnerEmail;\n\n  if (!monitorUrl) {\n    throw new Error('Copy returned no monitor URL. Headers: ' + JSON.stringify(d.headers || {}).substring(0, 200));\n  }\n\n  return { json: { monitorUrl, fileId, token, fileOwnerEmail } };\n});"
+      },
+      "id": "9d5b4e7a-50d3-4ca8-a59c-06eb57b63707",
+      "name": "Extract Copy Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4656,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Extract Copy Data').item.json.monitorUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "a631f2e6-05c9-46b1-9d81-174613deaaf5",
+      "name": "Check Copy Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4880,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-copy-done",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "681a5628-157a-454e-b08e-cf9849501c57",
+      "name": "Copy Done?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        5104,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-is-sales",
+              "leftValue": "={{ $('Classify Call').item.json.isSales }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8a240944-b479-4186-8302-7a3076f81ef4",
+      "name": "Is Sales?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        6672,
+        -416
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.microsoft.com/v1.0/users/{{ $('Classify Call').item.json.orgUserId }}/onlineMeetings?$filter=joinWebUrl eq '{{ $('Classify Call').item.json.joinWebUrl }}'",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "c53abeb1-02e0-4917-8ca9-53eeef8652b3",
+      "name": "Get Online Meeting",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2192,
+        -16
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Classify Call').first().json;\nconst meetingData = $input.first().json;\nconst meetings = meetingData.value || [];\nconst meeting = meetings[0] || {};\n\nconst recordings = meeting.recordings || [];\nconst subject = meeting.subject || '';\n\n// Extract company name from subject\nlet companyName = subject;\nif (subject.toLowerCase().startsWith('simplifying compliance for ')) {\n  companyName = subject.substring('Simplifying Compliance for '.length);\n}\n\nreturn [{\n  json: {\n    ...ctx,\n    meetingId: meeting.id || '',\n    meetingSubject: subject,\n    companyName,\n    recordingUrl: recordings[0]?.recordingContentUrl || '',\n    hasRecording: recordings.length > 0\n  }\n}];"
+      },
+      "id": "68c358cb-e0e2-4f5f-b16d-dddd3c01590c",
+      "name": "Extract Meeting Info",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2416,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-meeting-id",
+              "leftValue": "={{ $('Extract Meeting Info').first().json.meetingId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c3bdf1a0-1439-4ae4-8482-edf03fdc897a",
+      "name": "Has Meeting ID?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4208,
+        -416
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const transcript = $('Parse Transcript').first().json.transcript;\nconst ctx = $('Extract Meeting Info').first().json;\nconst meetingDate = new Date(ctx.callStart).toISOString().split('T')[0];\n\nconst productsContext = 'YourCompany Products:\\n' +\n  '- CAP (Compliance Accelerator Plan): FREE 30-day program. Not a paid signal.\\n' +\n  '- Achievement Plan (AP): Paid, hands-on implementation. Startup (1-50 employees) or Scale (50+). Primary upsell from CAP.\\n' +\n  '- Internal Audit (IA): Paid, pre-certification audit. Signal: needs audit readiness check.\\n' +\n  '- Pentesting (PT): Paid, VAPT/penetration testing. Signal: mentions VAPT, SOC 2 Type II technical controls.\\n' +\n  '- Assurance Plan (TAP): Paid, recurring monthly. Signal: wants ongoing compliance post-certification.\\n' +\n  '- Drata Subscription: SaaS compliance platform, monthly billing.\\n' +\n  '- SOC 2 Certification: Includes external audit, 50/50 payment.\\n' +\n  '- Custom Framework: Bespoke compliance work.';\n\nconst noteFormat = 'Output a JSON object with these fields:\\n' +\n  '{\\n' +\n  '  \"companyName\": \"extracted company name\",\\n' +\n  '  \"note\": \"HTML formatted CRM note using <b> tags for labels with: Company size, Country/Region, Frameworks, Certification status (per framework), Due date for cert, External Auditor, GRC tool+status, Services discussed, Likely decision, Start date (paid only), Next steps, Paid plan fit (AP/IA/PT/TAP each with Fit/No fit/Maybe + reasoning), Notes (key concerns/opportunities/red flags)\",\\n' +\n  '  \"country\": \"country string or empty\",\\n' +\n  '  \"framework\": \"comma-separated: ISO 27001,SOC 2,VAPT,GDPR,etc or empty\",\\n' +\n  '  \"engagement\": \"comma-separated from: Accelerator Plan,Achievement Plan,Assurance Plan,VAPT,vCISO,Internal Audit,Certification,Custom Framework,MSSP,Gap Analysis,Consultancy,SOC 2 Report,Surveillance Audit\",\\n' +\n  '  \"ap_status\": \"one of: Won,Warm,Lost,Not Interested,Signed,Might be Interested or empty\",\\n' +\n  '  \"slackSummary\": \"2-3 line summary for Slack notification\"\\n' +\n  '}';\n\nconst prompt = 'You are an expert sales analyst for YourCompany, a cybersecurity and compliance consulting company.\\n\\n' +\n  productsContext + '\\n\\n' +\n  'Analyze this sales call transcript and produce structured output.\\n\\n' +\n  'Meeting date: ' + meetingDate + '\\n' +\n  'Organizer: ' + ctx.orgName + ' (' + ctx.orgEmail + ')\\n' +\n  'Attendees: ' + ($('Extract Attendee Emails').first().json.attendeeEmails.map(a => a.name + ' (' + a.email + ')') || []).join(', ') + '\\n\\n' +\n  'TRANSCRIPT:\\n' + transcript + '\\n\\n' +\n  'IMPORTANT RULES:\\n' +\n  '- CAP is free. Never use it as a signal for ap_status. Never assess fit for CAP.\\n' +\n  '- Focus on paid service signals (AP, IA, PT, TAP).\\n' +\n  '- If data is missing from transcript, mark as TBD, do not skip fields.\\n' +\n  '- Use HTML <b> tags for all field labels in the note.\\n' +\n  '- Only output valid JSON, nothing else.\\n\\n' +\n  noteFormat;\n\nconst requestBody = {\n  model: 'claude-sonnet-4-20250514',\n  max_tokens: 4096,\n  messages: [\n    {\n      role: 'user',\n      content: prompt\n    }\n  ]\n};\n\nreturn [{\n  json: {\n    ...ctx,\n    transcript,\n    requestBody\n  }\n}];"
+      },
+      "id": "aa02d1bc-fd76-4288-961a-606df3d9b804",
+      "name": "Build Summary Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6000,
+        -416
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "[your-api-key]"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "d5bfec8c-949d-4402-8924-f35e02e09453",
+      "name": "Summarize (Claude)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        6224,
+        -416
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst ctx = $('Build Summary Prompt').first().json;\nlet text = '';\n\n// Claude returns content array\nif (response.content && response.content[0]) {\n  text = response.content[0].text || '';\n}\n\n// Parse JSON from response (handle markdown code blocks)\nlet parsed;\ntry {\n  const jsonMatch = text.match(/```(?:json)?\\s*([\\s\\S]*?)```/);\n  if (jsonMatch) {\n    parsed = JSON.parse(jsonMatch[1].trim());\n  } else {\n    parsed = JSON.parse(text.trim());\n  }\n} catch (e) {\n  return [{\n    json: {\n      ...ctx,\n      parseError: true,\n      rawResponse: text,\n      note: '<b>Error:</b> Could not parse Claude response. Raw text saved.',\n      companyName: 'Unknown',\n      country: '',\n      framework: '',\n      engagement: '',\n      ap_status: '',\n      slackSummary: 'Error parsing call summary - manual review needed'\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    ...ctx,\n    note: parsed.note || '',\n    companyName: parsed.companyName || 'Unknown',\n    country: parsed.country || '',\n    framework: parsed.framework || '',\n    engagement: parsed.engagement || '',\n    ap_status: parsed.ap_status || '',\n    slackSummary: parsed.slackSummary || '',\n    parseError: false\n  }\n}];"
+      },
+      "id": "f462c2c5-5d2f-426d-88c2-49f4bc34d0fb",
+      "name": "Parse Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6448,
+        -416
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/deals/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  filterGroups: [{\n    filters: [{\n      propertyName: \"lead_domain\",\n      operator: \"CONTAINS_TOKEN\",\n      value: $('Extract Attendee Emails').first().json.externalDomain\n    }]\n  }],\n  properties: [\"dealname\",\"dealstage\",\"pipeline\",\"ap_status\",\"country\",\"framework\",\"engagement\",\"createdate\",\"deal_owner_s_\",\"intro_call\",\"lead_domain\",\"closedate\"],\n  sorts: [{ propertyName: \"createdate\", direction: \"DESCENDING\" }],\n  limit: 20\n}) }}",
+        "options": {}
+      },
+      "id": "9bc07dd4-76a5-410c-a498-7d4f07c7c0f1",
+      "name": "Search Deals",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        6896,
+        -512
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-deal",
+              "leftValue": "={{ $json.results?.length || 0 }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a8496dd1-ddca-4e7e-8de5-71dfe10ff74e",
+      "name": "Deal Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        7120,
+        -512
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Classify Call').first().json.slackChannel }}",
+          "mode": "id"
+        },
+        "text": "=:warning: *Teams Recording - No Deal Found*\n\n*Organizer:* {{ $('Classify Call').item.json.orgName }}\n*Contact:* {{ $('Classify Call').first().json.attendeeNames[0] || 'Unknown' }}\n*Call Date:* {{ $('Classify Call').item.json.callStart }}\n\n_Contact found but no associated deal._",
+        "otherOptions": {}
+      },
+      "id": "7dcc6f83-aeb8-4e4c-9c2f-575f306b2966",
+      "name": "Slack: No Deal Found",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        7344,
+        -416
+      ],
+      "webhookId": "727d6f16-6db2-4ccc-8862-f17db9da8d05",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/engagements/v1/engagements",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (() => {\n  const ctx = $('Extract Attendee Emails').first().json;\n  const summary = $('Parse Summary').first().json;\n  const deal = $('Pick Best Deal').first().json;\n  const callDate = new Date(ctx.callStart).toISOString().split('T')[0];\n  const prefix = ctx.isSales ? 'Sales' : 'Operations';\n  const noteBody = '<b>' + prefix + ' Call on ' + callDate + '</b><br><br>' + summary.note;\n  \n  return JSON.stringify({\n    engagement: {\n      active: true,\n      type: \"NOTE\",\n      timestamp: Date.now()\n    },\n    associations: {\n      dealIds: [Number(deal.dealId)]\n    },\n    metadata: {\n      body: noteBody\n    }\n  });\n})() }}",
+        "options": {}
+      },
+      "id": "ccd9d7f4-379d-47b8-add8-20d9cf4891ec",
+      "name": "Create HubSpot Note",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        7568,
+        -608
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/deals/{{ $('Pick Best Deal').first().json.dealId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"properties\": { \"country\": $('Parse Summary').item.json.country || '', \"framework\": $('Parse Summary').item.json.framework || '', \"engagement\": $('Parse Summary').item.json.engagement || '', \"ap_status\": $('Parse Summary').item.json.ap_status || '' } } }}",
+        "options": {}
+      },
+      "id": "a08f4ef9-57c4-44de-bf97-66e6130faca7",
+      "name": "Update Deal Fields",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        7792,
+        -608
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Classify Call').first().json.slackChannel }}",
+          "mode": "id"
+        },
+        "text": "=:white_check_mark: *Sales Call Processed*\n\n*Company:* {{ $('Parse Summary').item.json.companyName }}\n*Deal:* {{ $('Pick Best Deal').first().json.dealName }}\n*Contact:* {{ $('Classify Call').first().json.attendeeNames[0] || 'Unknown' }}\n*AP Status:* {{ $('Parse Summary').item.json.ap_status }}\n\n{{ $('Parse Summary').item.json.slackSummary }}",
+        "otherOptions": {}
+      },
+      "id": "5aa6d9df-2992-4ad0-bb9e-fc99caebe44b",
+      "name": "Slack: Success",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        8016,
+        -608
+      ],
+      "webhookId": "1e8fc116-a517-43fd-96be-63254b35301e",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.microsoft.com/v1.0/users/{{ $('Classify Call').first().json.orgUserId }}/onlineMeetings/{{ $('Extract Meeting Info').first().json.meetingId }}/transcripts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3b33869e-9149-498a-8f2c-69749dcada01",
+      "name": "List Transcripts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4432,
+        -416
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.microsoft.com/v1.0/users/{{ $('Classify Call').first().json.orgUserId }}/onlineMeetings/{{ $('Extract Meeting Info').first().json.meetingId }}/transcripts/{{ $input.first().json.value[0].id }}/content",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            },
+            {
+              "name": "Accept",
+              "value": "text/vtt"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "882cd852-6360-4a9e-80c1-c7a18507ce14",
+      "name": "Download Transcript",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4656,
+        -416
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.data || $input.first().json.body || '';\nconst ctx = $('Classify Call').first().json;\n\n// Parse VTT format: extract speaker and text lines\nconst lines = raw.split('\\n');\nconst entries = [];\nlet currentSpeaker = '';\nlet currentText = '';\n\nfor (const line of lines) {\n  const trimmed = line.trim();\n  \n  // Skip WEBVTT header and empty lines\n  if (!trimmed || trimmed === 'WEBVTT' || trimmed.startsWith('NOTE')) continue;\n  \n  // Skip timestamp lines (00:00:00.000 --> 00:00:05.000)\n  if (trimmed.includes('-->')) continue;\n  \n  // Speaker line: <v Speaker Name>text</v>\n  const speakerMatch = trimmed.match(/<v\\s+([^>]+)>(.+?)(?:<\\/v>)?$/);\n  if (speakerMatch) {\n    const speaker = speakerMatch[1].trim();\n    const text = speakerMatch[2].replace(/<\\/v>/, '').trim();\n    if (speaker !== currentSpeaker) {\n      if (currentText) entries.push({ speaker: currentSpeaker, text: currentText });\n      currentSpeaker = speaker;\n      currentText = text;\n    } else {\n      currentText += ' ' + text;\n    }\n  } else if (trimmed && !trimmed.match(/^\\d+$/) && !trimmed.match(/^\\d{2}:/)) {\n    // Plain text line (continuation)\n    if (currentText) currentText += ' ' + trimmed;\n  }\n}\nif (currentText) entries.push({ speaker: currentSpeaker, text: currentText });\n\n// Format as readable transcript\nconst transcript = entries.map(e => e.speaker + ': ' + e.text).join('\\n\\n');\n\nif (!transcript || transcript.length < 50) {\n  // Fallback: just clean the raw text\n  const fallback = raw.replace(/<[^>]+>/g, '').replace(/WEBVTT[\\s\\S]*?\\n\\n/, '').replace(/\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\s*-->\\s*\\d{2}:\\d{2}:\\d{2}\\.\\d{3}/g, '').replace(/^\\d+$/gm, '').trim();\n  return [{ json: { ...ctx, transcript: fallback || 'Transcript could not be parsed' } }];\n}\n\nreturn [{ json: { ...ctx, transcript } }];"
+      },
+      "id": "07d62890-d370-46ac-bc4c-aa265758c931",
+      "name": "Parse Transcript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4880,
+        -416
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-transcript",
+              "leftValue": "={{ $input.first().json.transcript }}",
+              "rightValue": "Transcript could not be parsed",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1d2823f3-c723-4da8-96c0-6d6f2f2d879e",
+      "name": "Has Transcript?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        5104,
+        -416
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.microsoft.com/v1.0/users/{{ $json.organizer.user.id }}?$select=mail,userPrincipalName,displayName",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "05431daf-abb5-4550-a9dd-dd53d376f0e3",
+      "name": "Get Organizer Profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2816,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.first().json.value || [];\nconst ctx = $('Classify Call').first().json;\n\nconst recFolder = items.find(i => i.folder && i.name === 'Recordings');\nif (!recFolder) return [];\n\nreturn [{ json: { ...ctx, recordingsFolderId: recFolder.id } }];"
+      },
+      "id": "aac6ad2e-a3e0-4777-b972-ef3fe72061b6",
+      "name": "Find Recordings Folder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3088,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.microsoft.com/v1.0/users/{{ $input.first().json.orgEmail || $input.first().json.recordingsUser }}/drive/items/{{ $input.first().json.recordingsFolderId }}/children",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fb3cd91e-310e-4396-b825-d73e8cb3a796",
+      "name": "List Recording Files",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3312,
+        -16
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "teams-recordings",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "55d5dabc-5e6e-4d28-907d-ced3a124046f",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        -400
+      ],
+      "webhookId": "teams-recordings-yourcompany",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "id": "dd0d6c77-a9a1-4b41-ad8e-5eb3123e824b",
+      "name": "Wait 30s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        5328,
+        -112
+      ],
+      "webhookId": "ebe0b8d6-852e-4d07-b834-472aa262ce8d"
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.microsoft.com/v1.0/users/{{ $json.orgEmail }}/calendarView",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "startDateTime",
+              "value": "={{ $json.callStart }}"
+            },
+            {
+              "name": "endDateTime",
+              "value": "={{ $json.callEnd }}"
+            },
+            {
+              "name": "$select",
+              "value": "subject,attendees"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            },
+            {
+              "name": "Prefer",
+              "value": "outlook.timezone=\"UTC\""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-calendar-event",
+      "name": "Get Calendar Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3488,
+        -304
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Classify Call').first().json;\nconst calData = $input.first().json;\nconst events = calData.value || [];\n\n// Find matching event by subject\nconst meetingSubject = ctx.joinWebUrl ? '' : ''; // we don't have subject yet\nconst salesList = ctx.salesEmails.split(',').map(e => e.trim().toLowerCase());\n\n// Collect external attendee emails from calendar event\nconst attendeeEmails = [];\nlet domain = '';\n\nfor (const ev of events) {\n  const attendees = ev.attendees || [];\n  for (const a of attendees) {\n    const email = (a.emailAddress?.address || '').toLowerCase();\n    const name = a.emailAddress?.name || '';\n    if (!email) continue;\n    // Skip internal (sales) emails\n    if (salesList.some(s => email.includes(s))) continue;\n    // Skip yourcompany.com domain entirely\n    if (email.endsWith('@yourcompany.com')) continue;\n    attendeeEmails.push({ email, name });\n    // Extract domain from first external email\n    if (!domain && email.includes('@')) {\n      domain = email.split('@')[1];\n    }\n  }\n}\n\nreturn [{\n  json: {\n    ...ctx,\n    attendeeEmails,\n    externalDomain: domain,\n    attendeeNames: attendeeEmails.map(a => a.name).concat(ctx.attendeeNames || []).filter((v, i, arr) => arr.indexOf(v) === i)\n  }\n}];"
+      },
+      "id": "extract-attendee-emails",
+      "name": "Extract Attendee Emails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3712,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $input.first().json.results || [];\nconst RENEWAL_PIPELINE = '820213778';\n\n// Closed stage IDs (deals we consider \"closed\")\nconst closedStages = ['266058584', '266058587', '266058586', '266058588', // Sales closed\n  '1211728151', '1211728153', // Renewal closed\n  '1297403657', // CAP closed\n  '1127106359', '1127121742' // No response\n];\n\n// Separate deals into categories\nconst openNonRenewal = [];\nconst renewal = [];\nconst other = [];\n\nfor (const deal of results) {\n  const pipeline = deal.properties?.pipeline || '';\n  const stage = deal.properties?.dealstage || '';\n  const isClosed = closedStages.includes(stage);\n  \n  if (pipeline === RENEWAL_PIPELINE) {\n    renewal.push(deal);\n  } else if (!isClosed) {\n    openNonRenewal.push(deal);\n  } else {\n    other.push(deal);\n  }\n}\n\n// Pick: first open non-renewal, then renewal, then most recent anything\nconst picked = openNonRenewal[0] || renewal[0] || other[0] || results[0];\n\nif (!picked) return [];\n\nreturn [{\n  json: {\n    ...($('Extract Attendee Emails').first().json),\n    deal: picked,\n    dealId: picked.id,\n    dealName: picked.properties?.dealname || '',\n    dealProperties: picked.properties || {}\n  }\n}];"
+      },
+      "id": "pick-best-deal",
+      "name": "Pick Best Deal",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7344,
+        -608
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.microsoft.com/v1.0/users/{{ $('Extract Attendee Emails').first().json.recordingsUser }}/drive/items/{{ $('Filter New Files').first().json.fileId }}/content",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "download-recording",
+      "name": "Download Recording",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5328,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "id": "transcribe-whisper",
+      "name": "Transcribe (Whisper)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        5552,
+        -304
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "d03HNhtWh3tV5wdT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Extract Attendee Emails').first().json;\nconst whisperText = $input.first().json.text || '';\n\nreturn [{\n  json: {\n    ...ctx,\n    transcript: whisperText || 'Transcript could not be generated'\n  }\n}];"
+      },
+      "id": "format-whisper",
+      "name": "Format Whisper Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5776,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "U09NRRBRS1K",
+          "mode": "id"
+        },
+        "text": "=:warning: *Meeting Recording Not Found*\n\n*Meeting:* {{ $('Extract Meeting Info').first().json.meetingSubject }}\n*Organizer:* {{ $('Classify Call').first().json.orgName }} ({{ $('Classify Call').first().json.orgEmail }})\n*Call Time:* {{ $('Classify Call').first().json.callStart.substring(0, 16).replace('T', ' ') }} UTC\n*Type:* {{ $('Classify Call').first().json.isSales ? 'Sales' : 'Operations' }}\n*Attendees:* {{ $('Classify Call').first().json.attendeeNames.join(', ') || 'Unknown' }}\n\n*Reason:* No matching recording file found in team@company.com Recordings folder. The file might not have been saved yet, or the meeting subject didn't match any filename.",
+        "otherOptions": {}
+      },
+      "id": "slack-no-recording",
+      "name": "Slack: No Recording Found",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        3984,
+        96
+      ],
+      "webhookId": "9348d247-f388-42ef-98ff-538143afcd9f",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const meetingInfo = $('Extract Meeting Info').first().json;\nconst classify = $('Classify Call').first().json;\nconst emails = $('Extract Attendee Emails').first().json;\nconst summary = $('Parse Summary').first().json;\n\n// Calculate duration\nlet duration = '';\nif (classify.callStart && classify.callEnd) {\n  const start = new Date(classify.callStart);\n  const end = new Date(classify.callEnd);\n  const diffMs = end - start;\n  const diffMin = Math.round(diffMs / 60000);\n  duration = diffMin + ' min';\n}\n\n// Build attendee string\nconst attendeeNames = (classify.attendeeNames || []).join(', ') || 'Unknown';\n\n// Get date (just the date part)\nconst callDate = classify.callStart ? classify.callStart.split('T')[0] : new Date().toISOString().split('T')[0];\n\n// Build summary text (max 2000 chars for Notion rich_text)\nlet summaryText = summary.slackSummary || summary.note || '';\nif (summaryText.length > 2000) {\n  summaryText = summaryText.substring(0, 1997) + '...';\n}\n\n// Build recording link from SharePoint info\nconst recordingLink = meetingInfo.recordingUrl || '';\n\nconst notionBody = {\n  parent: { database_id: \"32f2b80dedad804ca94dc95f5545abe9\" },\n  properties: {\n    \"Meeting Title\": {\n      title: [{ text: { content: meetingInfo.meetingSubject || 'Untitled Meeting' } }]\n    },\n    \"Date\": {\n      date: { start: callDate }\n    },\n    \"Attendees\": {\n      rich_text: [{ text: { content: attendeeNames } }]\n    },\n    \"Duration\": {\n      rich_text: [{ text: { content: duration } }]\n    },\n    \"Recording Link\": {\n      url: recordingLink || null\n    },\n    \"Summary\": {\n      rich_text: [{ text: { content: summaryText } }]\n    }\n  }\n};\n\nreturn [{\n  json: {\n    ...summary,\n    notionBody\n  }\n}];"
+      },
+      "id": "build-notion-body",
+      "name": "Build Notion Body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6896,
+        -224
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            },
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.notionBody }}",
+        "options": {}
+      },
+      "id": "create-notion-page",
+      "name": "Create Notion Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        7120,
+        -224
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Classify Call').first().json.slackChannel }}",
+          "mode": "id"
+        },
+        "text": "=:memo: *Ops Call Recorded*\n\n*Meeting:* {{ $('Extract Meeting Info').first().json.meetingSubject }}\n*Attendees:* {{ $('Classify Call').first().json.attendeeNames.join(', ') || 'Unknown' }}\n*Date:* {{ $('Classify Call').first().json.callStart }}\n*Duration:* {{ $('Build Notion Body').first().json.notionBody ? $('Build Notion Body').first().json.notionBody.properties.Duration.rich_text[0].text.content : '' }}\n\n{{ $('Parse Summary').first().json.slackSummary || 'No summary available' }}\n\n_Saved to Notion._",
+        "otherOptions": {}
+      },
+      "id": "slack-ops-summary",
+      "name": "Slack: Ops Summary",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        7344,
+        -224
+      ],
+      "webhookId": "18e4a4e3-affe-4132-a4c1-f16c907026ea",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger (Every 2 Days)": {
+      "main": [
+        [
+          {
+            "node": "Get Token A (Renewal)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Token A (Renewal)": {
+      "main": [
+        [
+          {
+            "node": "Build Subscription Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Subscription Payload": {
+      "main": [
+        [
+          {
+            "node": "List Existing Subscriptions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Existing Subscriptions": {
+      "main": [
+        [
+          {
+            "node": "Filter Old Subs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Old Subs": {
+      "main": [
+        [
+          {
+            "node": "Has Subs to Delete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Subs to Delete?": {
+      "main": [
+        [
+          {
+            "node": "Delete Old Subscription",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Register Graph Subscription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Old Subscription": {
+      "main": [
+        [
+          {
+            "node": "Register Graph Subscription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Filter Notification": {
+      "main": [
+        [
+          {
+            "node": "Get Token A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Token A": {
+      "main": [
+        [
+          {
+            "node": "Get Call Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Call Record": {
+      "main": [
+        [
+          {
+            "node": "Get Organizer Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sales Emails": {
+      "main": [
+        [
+          {
+            "node": "Classify Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Call": {
+      "main": [
+        [
+          {
+            "node": "Get Calendar Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get SharePoint Drive": {
+      "main": [
+        [
+          {
+            "node": "Get Recordings Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter New Files": {
+      "main": [
+        [
+          {
+            "node": "Has Files?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Files?": {
+      "main": [
+        [
+          {
+            "node": "Split in Batches",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: No Recording Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split in Batches": {
+      "main": [
+        [
+          {
+            "node": "Has Meeting ID?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Copy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Copy": {
+      "main": [
+        [
+          {
+            "node": "Copy to SharePoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy to SharePoint": {
+      "main": [
+        [
+          {
+            "node": "Extract Copy Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Copy Data": {
+      "main": [
+        [
+          {
+            "node": "Check Copy Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Copy Status": {
+      "main": [
+        [
+          {
+            "node": "Copy Done?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy Done?": {
+      "main": [
+        [
+          {
+            "node": "Split in Batches",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 30s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Sales?": {
+      "main": [
+        [
+          {
+            "node": "Search Deals",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Notion Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Online Meeting": {
+      "main": [
+        [
+          {
+            "node": "Extract Meeting Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Meeting Info": {
+      "main": [
+        [
+          {
+            "node": "Get SharePoint Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Summary Prompt": {
+      "main": [
+        [
+          {
+            "node": "Summarize (Claude)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize (Claude)": {
+      "main": [
+        [
+          {
+            "node": "Parse Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Summary": {
+      "main": [
+        [
+          {
+            "node": "Is Sales?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Deals": {
+      "main": [
+        [
+          {
+            "node": "Deal Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deal Found?": {
+      "main": [
+        [
+          {
+            "node": "Pick Best Deal",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: No Deal Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create HubSpot Note": {
+      "main": [
+        [
+          {
+            "node": "Update Deal Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Deal Fields": {
+      "main": [
+        [
+          {
+            "node": "Slack: Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Transcripts": {
+      "main": [
+        [
+          {
+            "node": "Download Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Transcript": {
+      "main": [
+        [
+          {
+            "node": "Parse Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Transcript": {
+      "main": [
+        [
+          {
+            "node": "Has Transcript?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Transcript?": {
+      "main": [
+        [
+          {
+            "node": "Build Summary Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download Recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Organizer Profile": {
+      "main": [
+        [
+          {
+            "node": "Sales Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Recordings Folder": {
+      "main": [
+        [
+          {
+            "node": "Find Recordings Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Recordings Folder": {
+      "main": [
+        [
+          {
+            "node": "List Recording Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Recording Files": {
+      "main": [
+        [
+          {
+            "node": "Filter New Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s": {
+      "main": [
+        [
+          {
+            "node": "Get Online Meeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Meeting ID?": {
+      "main": [
+        [
+          {
+            "node": "List Transcripts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Validate & Filter Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30s": {
+      "main": [
+        [
+          {
+            "node": "Check Copy Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Calendar Event": {
+      "main": [
+        [
+          {
+            "node": "Extract Attendee Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Attendee Emails": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Best Deal": {
+      "main": [
+        [
+          {
+            "node": "Create HubSpot Note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Recording": {
+      "main": [
+        [
+          {
+            "node": "Transcribe (Whisper)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe (Whisper)": {
+      "main": [
+        [
+          {
+            "node": "Format Whisper Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Whisper Output": {
+      "main": [
+        [
+          {
+            "node": "Build Summary Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Notion Body": {
+      "main": [
+        [
+          {
+            "node": "Create Notion Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Notion Page": {
+      "main": [
+        [
+          {
+            "node": "Slack: Ops Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Berlin",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "binaryMode": "separate"
+  },
+  "staticData": {
+    "node:Schedule Trigger (Every 2 Days)": {
+      "recurrenceRules": [
+        84
+      ]
+    },
+    "global": {
+      "processedIds": [
+        "f66c7f71-7b92-4ae9-a0ef-c784880d57a7",
+        "2efa4673-c5a3-4edd-baf1-9dff4d9690b8",
+        "12fddc4b-40b6-42c0-95dd-19c07470ecb1",
+        "d3969041-04b9-46da-a7a0-0cd172b3681c",
+        "0453f1af-58eb-42ae-8173-ec7a990b3424",
+        "603b65fc-6fcb-471f-8dbf-3d17061e8d87",
+        "498944a5-0b31-42ef-83ea-7e12798a7e21",
+        "6a66aa80-4eaa-4a8a-b641-e83ea5cecda8",
+        "cad05624-4d0a-449d-a689-3da0a4821bf8",
+        "b084367d-64fe-49d6-93b2-281493cc0e85",
+        "b4a6659b-6c3b-4143-b758-2fb35bcce51e",
+        "e9ce4824-d821-4b84-adef-08c0bd4a1487",
+        "495da178-923e-40ce-9cf9-eacdee2eef55",
+        "b85a78b4-ecc0-4256-ac8c-a0624a8b57d9",
+        "cc98292b-4680-410d-b2fb-647b685c3119",
+        "7d2917e1-3619-46ab-b5db-5291d14b11ba",
+        "2549a37f-219c-4e64-b9b1-76b7a4077f64",
+        "0748148b-0129-4286-a899-9b0af498ba38",
+        "20f16871-2f1f-423d-b188-9ae7fbd6121f",
+        "218dda01-6681-4dcc-81ef-295f40c11be4",
+        "f7d5db30-3e71-4900-9762-c0e1b20605bd",
+        "bd3c38d8-b9a4-4e5e-829e-64bb9f03b2ed",
+        "251d6652-8102-4c95-9774-ca7f2e2b7294",
+        "22f20eb7-5cbe-4305-8e8a-84e4c73a44e7",
+        "2ad6af00-249d-4f23-a54d-da0b2e4af33a",
+        "1f1a1ff2-b1e9-4d18-976e-e07a12868fbf",
+        "fa3892dc-a307-426d-81b0-b3bb5fb09a71",
+        "db7d3978-a4ef-4607-a5be-f6e61a226fcc",
+        "ea28853d-5ed6-4d24-bc2d-e8bc03f56e50",
+        "7813be47-87e4-4399-bffe-a806bc7e577c",
+        "1b06dae5-193a-48f3-b270-550d6e8576eb",
+        "a2641b25-f16c-4ccf-abec-dadf84f7c258",
+        "f1d4fdbd-4aac-4514-bef6-87094b583046",
+        "b2e810ba-91bb-44c9-8ca8-9fb8668596da",
+        "90707256-9299-48f4-ac17-fccdba5c6291",
+        "59c2f057-680e-4668-865f-d981daa259ed",
+        "3f170846-9545-45dc-bdc0-01c7b4ec9c86",
+        "30eb93af-c2a5-4520-b1d6-3e81699f6521",
+        "d3fb9191-3e29-48f2-84a4-cd2e3c2b7aa8",
+        "03a30bf4-da72-409d-949a-d64d9302eb5d",
+        "56489d46-3bb5-4471-b5e5-455c337de9d8",
+        "07a290d3-13e9-4a22-b500-226533c1a98c",
+        "8c620cb0-9c32-4662-b702-7cb38a453176",
+        "e32f4d86-c4e3-476b-a0e5-6fe2cfef3ed7",
+        "f12e2b32-6489-4e31-a283-2787e2e155a3",
+        "72d813f5-2c72-43a7-9503-72422dad6fd9",
+        "49a14d13-9624-48fc-8975-3ba057e59ed8",
+        "abd1dd95-0ab0-406a-8c98-6135057a2498",
+        "5f28ab8d-e2cf-48ce-9691-faff6dfe4aee",
+        "3a9bd1f6-cc91-44b4-a5e6-c02b7280cec3",
+        "a4194e0b-1d92-42cb-8f1f-5f0cd902bcae",
+        "2fc8df31-618d-494a-aeef-8751f78fd87f",
+        "3b71ec4d-5c53-4d24-abfd-d158bc47d398",
+        "6c414124-9673-4bf8-92b9-d4f0205428de",
+        "0e119e56-eea6-4275-80ba-1283ef0753aa",
+        "da4fb06e-3dcd-450e-a131-2cbbbff4bb54",
+        "4a0129f9-bbc7-465b-8164-6fcf006f8877",
+        "172b2b7f-ba62-4ac3-a067-6d48e2c4971e",
+        "dc8a386c-42c9-4851-829b-683cc813524e",
+        "1894a41e-8716-4cca-a4cc-301b04ecc64f",
+        "ce10ea20-329d-4185-8259-5feba92b8d11",
+        "095d2889-7eef-483d-8a21-7d242189d3f9",
+        "b7376e7c-c12f-4a8a-9d97-0ad79ce5fa45",
+        "e41c57f6-043f-45b9-9d2e-3251f6c0fe50",
+        "5057029b-73ca-4943-ac3b-815ed32d7802",
+        "c6eba4fd-b10b-49aa-95ba-c5666760d0b6",
+        "e97f2994-dbb5-49a2-95df-79825f9a1004",
+        "6527d344-fef4-46cb-bcf6-ee6bb64eb01c",
+        "8b61a643-cd43-4660-b7c0-1c167ee334fe",
+        "4ad4ad6e-d936-4f64-a9e7-7f6dd9c05703",
+        "e1b9d8c5-99c2-45fe-9373-f9a2c03903e6",
+        "3e9842b8-3503-4e72-846f-687caca61907",
+        "04e27628-fd03-4abd-921e-2bd32703a055",
+        "eb37e322-1d2e-4c6f-9afb-66d1abc0329f",
+        "d6186d7e-17a8-4858-8ec4-65477c8d0c13"
+      ]
+    }
+  },
+  "meta": null,
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "[your-n8n-domain]",
+            "content-length": "504",
+            "content-type": "application/json; charset=utf-8",
+            "request-id": "41dc372b-dcc3-4141-baee-736e166c3fbf",
+            "request-timestamp": "3/26/2026 12:04:51 PM +00:00",
+            "via": "1.1 Caddy",
+            "x-forwarded-for": "40.126.9.106",
+            "x-forwarded-host": "[your-n8n-domain]",
+            "x-forwarded-proto": "https",
+            "accept-encoding": "gzip"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "value": [
+              {
+                "subscriptionId": "9448c072-9248-40eb-9b6d-5bd9bf9a0dda",
+                "clientState": "yourcompanyRecordings2026",
+                "changeType": "created",
+                "resource": "communications/callRecords/095d2889-7eef-483d-8a21-7d242189d3f9",
+                "subscriptionExpirationDateTime": "2026-03-26T23:00:26.352+00:00",
+                "resourceData": {
+                  "@odata.type": "#Microsoft.Graph.callRecord",
+                  "@odata.id": "communications/callRecords/095d2889-7eef-483d-8a21-7d242189d3f9",
+                  "id": "095d2889-7eef-483d-8a21-7d242189d3f9"
+                },
+                "tenantId": "f4acf7a3-3986-4e90-8763-81b2528c92d6"
+              }
+            ]
+          },
+          "webhookUrl": "https://[your-n8n-domain]/webhook/teams-recordings",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "versionId": "9c230fd0-0423-42ff-8bb6-87fdd66c2f25",
+  "activeVersionId": "9c230fd0-0423-42ff-8bb6-87fdd66c2f25",
+  "versionCounter": 221,
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-03-25T11:32:58.937Z",
+      "createdAt": "2026-03-25T11:32:58.937Z",
+      "role": "workflow:owner",
+      "workflowId": "1OF0BsJyx3uM3kms",
+      "projectId": "1xouAt4QdWWhUWuM",
+      "project": {
+        "updatedAt": "2025-10-13T14:48:28.241Z",
+        "createdAt": "2025-10-13T14:47:21.362Z",
+        "id": "1xouAt4QdWWhUWuM",
+        "name": "Your Name <your-email@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-26T12:59:49.480Z",
+    "createdAt": "2026-03-26T12:59:49.480Z",
+    "versionId": "9c230fd0-0423-42ff-8bb6-87fdd66c2f25",
+    "workflowId": "1OF0BsJyx3uM3kms",
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "daysInterval": 2
+              }
+            ]
+          }
+        },
+        "id": "cf5801e7-1426-46af-8607-f10c8d612474",
+        "name": "Schedule Trigger (Every 2 Days)",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          2000,
+          416
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://login.microsoftonline.com/f4acf7a3-3986-4e90-8763-81b2528c92d6/oauth2/v2.0/token",
+          "sendBody": true,
+          "contentType": "form-urlencoded",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "client_id",
+                "value": "5323a07a-dafe-4cbc-8449-745a24b05d0c"
+              },
+              {
+                "name": "client_secret",
+                "value": "[your-azure-client-secret]"
+              },
+              {
+                "name": "scope",
+                "value": "https://graph.microsoft.com/.default"
+              },
+              {
+                "name": "grant_type",
+                "value": "client_credentials"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "1940e2f6-2c98-4ca3-839d-232707dc8360",
+        "name": "Get Token A (Renewal)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2224,
+          416
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const expirationDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);\nreturn [{\n  json: {\n    changeType: 'created,updated',\n    notificationUrl: 'https://[your-n8n-domain]/webhook/teams-recordings',\n    resource: 'communications/callRecords',\n    expirationDateTime: expirationDate.toISOString(),\n    clientState: 'yourcompanyRecordings2026'\n  }\n}];"
+        },
+        "id": "77c94a77-a138-440a-b1b1-09241ad5fcc7",
+        "name": "Build Subscription Payload",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2448,
+          416
+        ]
+      },
+      {
+        "parameters": {
+          "url": "https://graph.microsoft.com/v1.0/subscriptions",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "81bf7982-28db-47ec-95aa-693d03a290c2",
+        "name": "List Existing Subscriptions",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2672,
+          416
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const subs = $input.first().json.value || [];\nconst callRecordSubs = subs.filter(s => s.resource === 'communications/callRecords');\nif (callRecordSubs.length === 0) return [{ json: { noSubsToDelete: true } }];\nreturn callRecordSubs.map(s => ({ json: { subscriptionId: s.id } }));"
+        },
+        "id": "166740f1-2547-4fe7-ad18-5f0f8b0b4576",
+        "name": "Filter Old Subs",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2896,
+          416
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "cond-has-subs",
+                "leftValue": "={{ $json.noSubsToDelete }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "false",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "88633dbc-861e-4b60-9e2c-d5ae990df233",
+        "name": "Has Subs to Delete?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          3120,
+          416
+        ]
+      },
+      {
+        "parameters": {
+          "method": "DELETE",
+          "url": "=https://graph.microsoft.com/v1.0/subscriptions/{{ $json.subscriptionId }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "id": "266845ef-26f5-4170-aab0-c4751c0ff08b",
+        "name": "Delete Old Subscription",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          3344,
+          352
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://graph.microsoft.com/v1.0/subscriptions",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ $('Build Subscription Payload').item.json }}",
+          "options": {}
+        },
+        "id": "aff71b2a-f8a6-4297-93ee-89554a11c39a",
+        "name": "Register Graph Subscription",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          3568,
+          416
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "text",
+          "responseBody": "={{ $json.query.validationToken || 'OK' }}",
+          "options": {}
+        },
+        "id": "11fde5ac-6fd1-4492-b703-ae6a1c0edbf1",
+        "name": "Respond to Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          2144,
+          -496
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// Stop if it's just a validation handshake\nif ($input.first().json.query?.validationToken) return [];\n\nconst notification = $input.first().json.body?.value?.[0];\nif (!notification) return [];\n\n// Only process callRecords notifications\nif (!notification.resource?.startsWith('communications/callRecords')) return [];\n\nconst callId = notification.resourceData?.id || notification.resource?.split('/').pop();\n\n// Dedup using static data\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.processedIds) staticData.processedIds = [];\n\n// Remove the Test call ID so it can be reprocessed\nstaticData.processedIds = staticData.processedIds.filter(id => id !== callId);\n\n// Now check and add\nif (staticData.processedIds.includes(callId)) return [];\nstaticData.processedIds.push(callId);\nif (staticData.processedIds.length > 100) {\n  staticData.processedIds = staticData.processedIds.slice(-100);\n}\n\nreturn [{ json: { callId, clientState: notification.clientState } }];"
+        },
+        "id": "f5718b15-8962-43f0-b541-f679671588d7",
+        "name": "Validate & Filter Notification",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2144,
+          -304
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://login.microsoftonline.com/f4acf7a3-3986-4e90-8763-81b2528c92d6/oauth2/v2.0/token",
+          "sendBody": true,
+          "contentType": "form-urlencoded",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "client_id",
+                "value": "5323a07a-dafe-4cbc-8449-745a24b05d0c"
+              },
+              {
+                "name": "client_secret",
+                "value": "[your-azure-client-secret]"
+              },
+              {
+                "name": "scope",
+                "value": "https://graph.microsoft.com/.default"
+              },
+              {
+                "name": "grant_type",
+                "value": "client_credentials"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "260e4e5b-07bb-4661-8d92-c4e1fa56aa6e",
+        "name": "Get Token A",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2368,
+          -304
+        ]
+      },
+      {
+        "parameters": {
+          "url": "=https://graph.microsoft.com/v1.0/communications/callRecords/{{ $('Validate & Filter Notification').item.json.callId }}?$expand=sessions($expand=segments)",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "e0733672-9a17-4721-b10c-5396620928c4",
+        "name": "Get Call Record",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2592,
+          -304
+        ]
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "sales-emails",
+                "name": "salesEmails",
+                "value": "person1@company.com,team@company.com,person2@company.com",
+                "type": "string"
+              },
+              {
+                "id": "slack-channel",
+                "name": "slackChannel",
+                "value": "[slack-channel-id]",
+                "type": "string"
+              },
+              {
+                "id": "recordings-user",
+                "name": "recordingsUser",
+                "value": "team@company.com",
+                "type": "string"
+              }
+            ]
+          },
+          "includeOtherFields": true,
+          "options": {}
+        },
+        "id": "cd521f48-a76f-4e40-9382-1f8db33c37af",
+        "name": "Sales Emails",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          3040,
+          -304
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const callRecord = $('Get Call Record').first().json;\nconst organizer = $('Get Organizer Profile').first().json;\nconst orgEmail = (organizer.mail || organizer.userPrincipalName || '').toLowerCase();\nconst orgName = organizer.displayName || '';\nconst orgUserId = callRecord.organizer?.user?.id || '';\n\nconst salesList = $input.first().json.salesEmails.split(',').map(e => e.trim().toLowerCase());\nconst isSales = salesList.some(e => orgEmail.includes(e));\nconst targetFolder = isSales ? 'Sales' : 'Operations';\n\n// Extract attendee DISPLAY NAMES from participants (skip organizer and bots)\nconst participants = callRecord.participants || [];\nconst attendeeNames = [];\nfor (const p of participants) {\n  const name = p.user?.displayName || p.guest?.displayName || '';\n  if (!name || name === 'Guest user' || name === orgName) continue;\n  if (salesList.some(e => name.toLowerCase().includes(e.split('@')[0]))) continue;\n  attendeeNames.push(name);\n}\n\nconst token = $('Get Token A').first().json.access_token;\nconst recordingsUser = $input.first().json.recordingsUser || 'team@company.com';\n\nreturn [{\n  json: {\n    ...($input.first().json),\n    isSales,\n    targetFolder,\n    orgEmail,\n    orgName,\n    orgUserId,\n    recordingsUser,\n    attendeeNames,\n    callStart: callRecord.startDateTime,\n    callEnd: callRecord.endDateTime,\n    joinWebUrl: callRecord.joinWebUrl || '',\n    token\n  }\n}];"
+        },
+        "id": "72737a27-9651-4f4f-8ac4-01a7a17cf328",
+        "name": "Classify Call",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3264,
+          -304
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "9bc65370-17cc-4bc8-805c-46d5cb179124",
+        "name": "Wait 5s",
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          1968,
+          -16
+        ],
+        "webhookId": "7c889e85-63d1-422f-8fb8-b57bf8ad976b"
+      },
+      {
+        "parameters": {
+          "url": "https://graph.microsoft.com/v1.0/sites/yourcompany220.sharepoint.com,5c32d42c-3cda-4bd9-a8d0-47c55e1c257a,6ac24238-8b10-49ca-88eb-e2708ae3516d/drive",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "24ce6fc9-4308-4f30-9aeb-750dc4d06df3",
+        "name": "Get SharePoint Drive",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2640,
+          -16
+        ]
+      },
+      {
+        "parameters": {
+          "url": "=https://graph.microsoft.com/v1.0/users/{{ $('Classify Call').first().json.orgEmail }}/drive/root/children",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "806d9dbd-8231-4079-bd2d-9e13a7a0f913",
+        "name": "Get Recordings Folder",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2864,
+          -16
+        ],
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "const ctx = $('Extract Meeting Info').first().json;\nconst items = $input.first().json.value || [];\nconst subject = (ctx.meetingSubject || '').toLowerCase();\n\nconst files = items.filter(item => {\n  if (!item.file) return false;\n  const name = (item.name || '').toLowerCase();\n  // Match full subject against filename (before the date stamp)\n  if (subject && name.includes(subject)) return true;\n  return false;\n});\n\nif (files.length === 0) return [];\n\nreturn files.map(f => ({\n  json: {\n    ...ctx,\n    fileId: f.id,\n    fileName: f.name,\n    fileSize: f.size,\n    fileCreated: f.createdDateTime,\n    fileOwnerEmail: ctx.orgEmail || ctx.recordingsUser || 'team@company.com'\n  }\n}));"
+        },
+        "id": "6d5d74d3-52d9-420c-ab37-3ef0224030af",
+        "name": "Filter New Files",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3536,
+          -16
+        ],
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "cond-has-file",
+                "leftValue": "={{ $input.first().json.fileId }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEmpty",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "192dc038-632e-42c2-8cd4-b9cded934513",
+        "name": "Has Files?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          3760,
+          -16
+        ]
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "id": "e6067253-a9ae-4161-b646-18b605de89d3",
+        "name": "Split in Batches",
+        "type": "n8n-nodes-base.splitInBatches",
+        "typeVersion": 3,
+        "position": [
+          3984,
+          -112
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const spDriveId = $('Get SharePoint Drive').first().json.id;\nconst items = $input.all();\n\nreturn items.map(item => {\n  const d = item.json;\n  return {\n    json: {\n      ...d,\n      copyBody: {\n        parentReference: {\n          driveId: spDriveId,\n          path: '/root:/Meetings Recordings/' + d.targetFolder\n        },\n        \"@microsoft.graph.conflictBehavior\": \"replace\",\n        name: d.fileName\n      }\n    }\n  };\n});"
+        },
+        "id": "342ee9ff-d2a8-496a-970a-fcdff20ed337",
+        "name": "Prepare Copy",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4208,
+          -112
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=https://graph.microsoft.com/v1.0/users/{{ $json.fileOwnerEmail }}/drive/items/{{ $json.fileId }}/copy",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              },
+              {
+                "name": "Prefer",
+                "value": "respond-async"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ $json.copyBody }}",
+          "options": {
+            "response": {
+              "response": {
+                "fullResponse": true
+              }
+            }
+          }
+        },
+        "id": "d6b5f451-c9d4-4797-b81d-b8a3680f4b25",
+        "name": "Copy to SharePoint",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          4432,
+          -112
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  const d = item.json;\n  const monitorUrl = d.headers?.location || d.headers?.Location;\n  const fileId = $('Prepare Copy').first().json.fileId;\n  const token = $('Prepare Copy').first().json.token;\n  const fileOwnerEmail = $('Prepare Copy').first().json.fileOwnerEmail;\n\n  if (!monitorUrl) {\n    throw new Error('Copy returned no monitor URL. Headers: ' + JSON.stringify(d.headers || {}).substring(0, 200));\n  }\n\n  return { json: { monitorUrl, fileId, token, fileOwnerEmail } };\n});"
+        },
+        "id": "9d5b4e7a-50d3-4ca8-a59c-06eb57b63707",
+        "name": "Extract Copy Data",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4656,
+          -112
+        ]
+      },
+      {
+        "parameters": {
+          "url": "={{ $('Extract Copy Data').item.json.monitorUrl }}",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "id": "a631f2e6-05c9-46b1-9d81-174613deaaf5",
+        "name": "Check Copy Status",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          4880,
+          -112
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "cond-copy-done",
+                "leftValue": "={{ $json.status }}",
+                "rightValue": "completed",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "681a5628-157a-454e-b08e-cf9849501c57",
+        "name": "Copy Done?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          5104,
+          -176
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "cond-is-sales",
+                "leftValue": "={{ $('Classify Call').item.json.isSales }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "8a240944-b479-4186-8302-7a3076f81ef4",
+        "name": "Is Sales?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          6672,
+          -416
+        ]
+      },
+      {
+        "parameters": {
+          "url": "=https://graph.microsoft.com/v1.0/users/{{ $('Classify Call').item.json.orgUserId }}/onlineMeetings?$filter=joinWebUrl eq '{{ $('Classify Call').item.json.joinWebUrl }}'",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "id": "c53abeb1-02e0-4917-8ca9-53eeef8652b3",
+        "name": "Get Online Meeting",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2192,
+          -16
+        ],
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "const ctx = $('Classify Call').first().json;\nconst meetingData = $input.first().json;\nconst meetings = meetingData.value || [];\nconst meeting = meetings[0] || {};\n\nconst recordings = meeting.recordings || [];\nconst subject = meeting.subject || '';\n\n// Extract company name from subject\nlet companyName = subject;\nif (subject.toLowerCase().startsWith('simplifying compliance for ')) {\n  companyName = subject.substring('Simplifying Compliance for '.length);\n}\n\nreturn [{\n  json: {\n    ...ctx,\n    meetingId: meeting.id || '',\n    meetingSubject: subject,\n    companyName,\n    recordingUrl: recordings[0]?.recordingContentUrl || '',\n    hasRecording: recordings.length > 0\n  }\n}];"
+        },
+        "id": "68c358cb-e0e2-4f5f-b16d-dddd3c01590c",
+        "name": "Extract Meeting Info",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2416,
+          -16
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "cond-meeting-id",
+                "leftValue": "={{ $('Extract Meeting Info').first().json.meetingId }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEmpty",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "c3bdf1a0-1439-4ae4-8482-edf03fdc897a",
+        "name": "Has Meeting ID?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          4208,
+          -416
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const transcript = $('Parse Transcript').first().json.transcript;\nconst ctx = $('Extract Meeting Info').first().json;\nconst meetingDate = new Date(ctx.callStart).toISOString().split('T')[0];\n\nconst productsContext = 'YourCompany Products:\\n' +\n  '- CAP (Compliance Accelerator Plan): FREE 30-day program. Not a paid signal.\\n' +\n  '- Achievement Plan (AP): Paid, hands-on implementation. Startup (1-50 employees) or Scale (50+). Primary upsell from CAP.\\n' +\n  '- Internal Audit (IA): Paid, pre-certification audit. Signal: needs audit readiness check.\\n' +\n  '- Pentesting (PT): Paid, VAPT/penetration testing. Signal: mentions VAPT, SOC 2 Type II technical controls.\\n' +\n  '- Assurance Plan (TAP): Paid, recurring monthly. Signal: wants ongoing compliance post-certification.\\n' +\n  '- Drata Subscription: SaaS compliance platform, monthly billing.\\n' +\n  '- SOC 2 Certification: Includes external audit, 50/50 payment.\\n' +\n  '- Custom Framework: Bespoke compliance work.';\n\nconst noteFormat = 'Output a JSON object with these fields:\\n' +\n  '{\\n' +\n  '  \"companyName\": \"extracted company name\",\\n' +\n  '  \"note\": \"HTML formatted CRM note using <b> tags for labels with: Company size, Country/Region, Frameworks, Certification status (per framework), Due date for cert, External Auditor, GRC tool+status, Services discussed, Likely decision, Start date (paid only), Next steps, Paid plan fit (AP/IA/PT/TAP each with Fit/No fit/Maybe + reasoning), Notes (key concerns/opportunities/red flags)\",\\n' +\n  '  \"country\": \"country string or empty\",\\n' +\n  '  \"framework\": \"comma-separated: ISO 27001,SOC 2,VAPT,GDPR,etc or empty\",\\n' +\n  '  \"engagement\": \"comma-separated from: Accelerator Plan,Achievement Plan,Assurance Plan,VAPT,vCISO,Internal Audit,Certification,Custom Framework,MSSP,Gap Analysis,Consultancy,SOC 2 Report,Surveillance Audit\",\\n' +\n  '  \"ap_status\": \"one of: Won,Warm,Lost,Not Interested,Signed,Might be Interested or empty\",\\n' +\n  '  \"slackSummary\": \"2-3 line summary for Slack notification\"\\n' +\n  '}';\n\nconst prompt = 'You are an expert sales analyst for YourCompany, a cybersecurity and compliance consulting company.\\n\\n' +\n  productsContext + '\\n\\n' +\n  'Analyze this sales call transcript and produce structured output.\\n\\n' +\n  'Meeting date: ' + meetingDate + '\\n' +\n  'Organizer: ' + ctx.orgName + ' (' + ctx.orgEmail + ')\\n' +\n  'Attendees: ' + ($('Extract Attendee Emails').first().json.attendeeEmails.map(a => a.name + ' (' + a.email + ')') || []).join(', ') + '\\n\\n' +\n  'TRANSCRIPT:\\n' + transcript + '\\n\\n' +\n  'IMPORTANT RULES:\\n' +\n  '- CAP is free. Never use it as a signal for ap_status. Never assess fit for CAP.\\n' +\n  '- Focus on paid service signals (AP, IA, PT, TAP).\\n' +\n  '- If data is missing from transcript, mark as TBD, do not skip fields.\\n' +\n  '- Use HTML <b> tags for all field labels in the note.\\n' +\n  '- Only output valid JSON, nothing else.\\n\\n' +\n  noteFormat;\n\nconst requestBody = {\n  model: 'claude-sonnet-4-20250514',\n  max_tokens: 4096,\n  messages: [\n    {\n      role: 'user',\n      content: prompt\n    }\n  ]\n};\n\nreturn [{\n  json: {\n    ...ctx,\n    transcript,\n    requestBody\n  }\n}];"
+        },
+        "id": "aa02d1bc-fd76-4288-961a-606df3d9b804",
+        "name": "Build Summary Prompt",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          6000,
+          -416
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.anthropic.com/v1/messages",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "x-api-key",
+                "value": "[your-api-key]"
+              },
+              {
+                "name": "anthropic-version",
+                "value": "2023-06-01"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ $json.requestBody }}",
+          "options": {}
+        },
+        "id": "d5bfec8c-949d-4402-8924-f35e02e09453",
+        "name": "Summarize (Claude)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          6224,
+          -416
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const response = $input.first().json;\nconst ctx = $('Build Summary Prompt').first().json;\nlet text = '';\n\n// Claude returns content array\nif (response.content && response.content[0]) {\n  text = response.content[0].text || '';\n}\n\n// Parse JSON from response (handle markdown code blocks)\nlet parsed;\ntry {\n  const jsonMatch = text.match(/```(?:json)?\\s*([\\s\\S]*?)```/);\n  if (jsonMatch) {\n    parsed = JSON.parse(jsonMatch[1].trim());\n  } else {\n    parsed = JSON.parse(text.trim());\n  }\n} catch (e) {\n  return [{\n    json: {\n      ...ctx,\n      parseError: true,\n      rawResponse: text,\n      note: '<b>Error:</b> Could not parse Claude response. Raw text saved.',\n      companyName: 'Unknown',\n      country: '',\n      framework: '',\n      engagement: '',\n      ap_status: '',\n      slackSummary: 'Error parsing call summary - manual review needed'\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    ...ctx,\n    note: parsed.note || '',\n    companyName: parsed.companyName || 'Unknown',\n    country: parsed.country || '',\n    framework: parsed.framework || '',\n    engagement: parsed.engagement || '',\n    ap_status: parsed.ap_status || '',\n    slackSummary: parsed.slackSummary || '',\n    parseError: false\n  }\n}];"
+        },
+        "id": "f462c2c5-5d2f-426d-88c2-49f4bc34d0fb",
+        "name": "Parse Summary",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          6448,
+          -416
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.hubapi.com/crm/v3/objects/deals/search",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({\n  filterGroups: [{\n    filters: [{\n      propertyName: \"lead_domain\",\n      operator: \"CONTAINS_TOKEN\",\n      value: $('Extract Attendee Emails').first().json.externalDomain\n    }]\n  }],\n  properties: [\"dealname\",\"dealstage\",\"pipeline\",\"ap_status\",\"country\",\"framework\",\"engagement\",\"createdate\",\"deal_owner_s_\",\"intro_call\",\"lead_domain\",\"closedate\"],\n  sorts: [{ propertyName: \"createdate\", direction: \"DESCENDING\" }],\n  limit: 20\n}) }}",
+          "options": {}
+        },
+        "id": "9bc07dd4-76a5-410c-a498-7d4f07c7c0f1",
+        "name": "Search Deals",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          6896,
+          -512
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "cond-deal",
+                "leftValue": "={{ $json.results?.length || 0 }}",
+                "rightValue": 0,
+                "operator": {
+                  "type": "number",
+                  "operation": "gt"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "a8496dd1-ddca-4e7e-8de5-71dfe10ff74e",
+        "name": "Deal Found?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          7120,
+          -512
+        ]
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "={{ $('Classify Call').first().json.slackChannel }}",
+            "mode": "id"
+          },
+          "text": "=:warning: *Teams Recording - No Deal Found*\n\n*Organizer:* {{ $('Classify Call').item.json.orgName }}\n*Contact:* {{ $('Classify Call').first().json.attendeeNames[0] || 'Unknown' }}\n*Call Date:* {{ $('Classify Call').item.json.callStart }}\n\n_Contact found but no associated deal._",
+          "otherOptions": {}
+        },
+        "id": "7dcc6f83-aeb8-4e4c-9c2f-575f306b2966",
+        "name": "Slack: No Deal Found",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          7344,
+          -416
+        ],
+        "webhookId": "727d6f16-6db2-4ccc-8862-f17db9da8d05",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.hubapi.com/engagements/v1/engagements",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ (() => {\n  const ctx = $('Extract Attendee Emails').first().json;\n  const summary = $('Parse Summary').first().json;\n  const deal = $('Pick Best Deal').first().json;\n  const callDate = new Date(ctx.callStart).toISOString().split('T')[0];\n  const prefix = ctx.isSales ? 'Sales' : 'Operations';\n  const noteBody = '<b>' + prefix + ' Call on ' + callDate + '</b><br><br>' + summary.note;\n  \n  return JSON.stringify({\n    engagement: {\n      active: true,\n      type: \"NOTE\",\n      timestamp: Date.now()\n    },\n    associations: {\n      dealIds: [Number(deal.dealId)]\n    },\n    metadata: {\n      body: noteBody\n    }\n  });\n})() }}",
+          "options": {}
+        },
+        "id": "ccd9d7f4-379d-47b8-add8-20d9cf4891ec",
+        "name": "Create HubSpot Note",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          7568,
+          -608
+        ]
+      },
+      {
+        "parameters": {
+          "method": "PATCH",
+          "url": "=https://api.hubapi.com/crm/v3/objects/deals/{{ $('Pick Best Deal').first().json.dealId }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ { \"properties\": { \"country\": $('Parse Summary').item.json.country || '', \"framework\": $('Parse Summary').item.json.framework || '', \"engagement\": $('Parse Summary').item.json.engagement || '', \"ap_status\": $('Parse Summary').item.json.ap_status || '' } } }}",
+          "options": {}
+        },
+        "id": "a08f4ef9-57c4-44de-bf97-66e6130faca7",
+        "name": "Update Deal Fields",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          7792,
+          -608
+        ]
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "={{ $('Classify Call').first().json.slackChannel }}",
+            "mode": "id"
+          },
+          "text": "=:white_check_mark: *Sales Call Processed*\n\n*Company:* {{ $('Parse Summary').item.json.companyName }}\n*Deal:* {{ $('Pick Best Deal').first().json.dealName }}\n*Contact:* {{ $('Classify Call').first().json.attendeeNames[0] || 'Unknown' }}\n*AP Status:* {{ $('Parse Summary').item.json.ap_status }}\n\n{{ $('Parse Summary').item.json.slackSummary }}",
+          "otherOptions": {}
+        },
+        "id": "5aa6d9df-2992-4ad0-bb9e-fc99caebe44b",
+        "name": "Slack: Success",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          8016,
+          -608
+        ],
+        "webhookId": "1e8fc116-a517-43fd-96be-63254b35301e",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "url": "=https://graph.microsoft.com/v1.0/users/{{ $('Classify Call').first().json.orgUserId }}/onlineMeetings/{{ $('Extract Meeting Info').first().json.meetingId }}/transcripts",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "3b33869e-9149-498a-8f2c-69749dcada01",
+        "name": "List Transcripts",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          4432,
+          -416
+        ],
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "url": "=https://graph.microsoft.com/v1.0/users/{{ $('Classify Call').first().json.orgUserId }}/onlineMeetings/{{ $('Extract Meeting Info').first().json.meetingId }}/transcripts/{{ $input.first().json.value[0].id }}/content",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              },
+              {
+                "name": "Accept",
+                "value": "text/vtt"
+              }
+            ]
+          },
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "text"
+              }
+            }
+          }
+        },
+        "id": "882cd852-6360-4a9e-80c1-c7a18507ce14",
+        "name": "Download Transcript",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          4656,
+          -416
+        ],
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "const raw = $input.first().json.data || $input.first().json.body || '';\nconst ctx = $('Classify Call').first().json;\n\n// Parse VTT format: extract speaker and text lines\nconst lines = raw.split('\\n');\nconst entries = [];\nlet currentSpeaker = '';\nlet currentText = '';\n\nfor (const line of lines) {\n  const trimmed = line.trim();\n  \n  // Skip WEBVTT header and empty lines\n  if (!trimmed || trimmed === 'WEBVTT' || trimmed.startsWith('NOTE')) continue;\n  \n  // Skip timestamp lines (00:00:00.000 --> 00:00:05.000)\n  if (trimmed.includes('-->')) continue;\n  \n  // Speaker line: <v Speaker Name>text</v>\n  const speakerMatch = trimmed.match(/<v\\s+([^>]+)>(.+?)(?:<\\/v>)?$/);\n  if (speakerMatch) {\n    const speaker = speakerMatch[1].trim();\n    const text = speakerMatch[2].replace(/<\\/v>/, '').trim();\n    if (speaker !== currentSpeaker) {\n      if (currentText) entries.push({ speaker: currentSpeaker, text: currentText });\n      currentSpeaker = speaker;\n      currentText = text;\n    } else {\n      currentText += ' ' + text;\n    }\n  } else if (trimmed && !trimmed.match(/^\\d+$/) && !trimmed.match(/^\\d{2}:/)) {\n    // Plain text line (continuation)\n    if (currentText) currentText += ' ' + trimmed;\n  }\n}\nif (currentText) entries.push({ speaker: currentSpeaker, text: currentText });\n\n// Format as readable transcript\nconst transcript = entries.map(e => e.speaker + ': ' + e.text).join('\\n\\n');\n\nif (!transcript || transcript.length < 50) {\n  // Fallback: just clean the raw text\n  const fallback = raw.replace(/<[^>]+>/g, '').replace(/WEBVTT[\\s\\S]*?\\n\\n/, '').replace(/\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\s*-->\\s*\\d{2}:\\d{2}:\\d{2}\\.\\d{3}/g, '').replace(/^\\d+$/gm, '').trim();\n  return [{ json: { ...ctx, transcript: fallback || 'Transcript could not be parsed' } }];\n}\n\nreturn [{ json: { ...ctx, transcript } }];"
+        },
+        "id": "07d62890-d370-46ac-bc4c-aa265758c931",
+        "name": "Parse Transcript",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4880,
+          -416
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "cond-transcript",
+                "leftValue": "={{ $input.first().json.transcript }}",
+                "rightValue": "Transcript could not be parsed",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEquals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "1d2823f3-c723-4da8-96c0-6d6f2f2d879e",
+        "name": "Has Transcript?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          5104,
+          -416
+        ]
+      },
+      {
+        "parameters": {
+          "url": "=https://graph.microsoft.com/v1.0/users/{{ $json.organizer.user.id }}?$select=mail,userPrincipalName,displayName",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "05431daf-abb5-4550-a9dd-dd53d376f0e3",
+        "name": "Get Organizer Profile",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2816,
+          -304
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const items = $input.first().json.value || [];\nconst ctx = $('Classify Call').first().json;\n\nconst recFolder = items.find(i => i.folder && i.name === 'Recordings');\nif (!recFolder) return [];\n\nreturn [{ json: { ...ctx, recordingsFolderId: recFolder.id } }];"
+        },
+        "id": "aac6ad2e-a3e0-4777-b972-ef3fe72061b6",
+        "name": "Find Recordings Folder",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3088,
+          -16
+        ]
+      },
+      {
+        "parameters": {
+          "url": "=https://graph.microsoft.com/v1.0/users/{{ $input.first().json.orgEmail || $input.first().json.recordingsUser }}/drive/items/{{ $input.first().json.recordingsFolderId }}/children",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "fb3cd91e-310e-4396-b825-d73e8cb3a796",
+        "name": "List Recording Files",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          3312,
+          -16
+        ],
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "teams-recordings",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "55d5dabc-5e6e-4d28-907d-ced3a124046f",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          1920,
+          -400
+        ],
+        "webhookId": "teams-recordings-yourcompany",
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "amount": 30
+        },
+        "id": "dd0d6c77-a9a1-4b41-ad8e-5eb3123e824b",
+        "name": "Wait 30s",
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          5328,
+          -112
+        ],
+        "webhookId": "ebe0b8d6-852e-4d07-b834-472aa262ce8d"
+      },
+      {
+        "parameters": {
+          "url": "=https://graph.microsoft.com/v1.0/users/{{ $json.orgEmail }}/calendarView",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "startDateTime",
+                "value": "={{ $json.callStart }}"
+              },
+              {
+                "name": "endDateTime",
+                "value": "={{ $json.callEnd }}"
+              },
+              {
+                "name": "$select",
+                "value": "subject,attendees"
+              }
+            ]
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              },
+              {
+                "name": "Prefer",
+                "value": "outlook.timezone=\"UTC\""
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "get-calendar-event",
+        "name": "Get Calendar Event",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          3488,
+          -304
+        ],
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "const ctx = $('Classify Call').first().json;\nconst calData = $input.first().json;\nconst events = calData.value || [];\n\n// Find matching event by subject\nconst meetingSubject = ctx.joinWebUrl ? '' : ''; // we don't have subject yet\nconst salesList = ctx.salesEmails.split(',').map(e => e.trim().toLowerCase());\n\n// Collect external attendee emails from calendar event\nconst attendeeEmails = [];\nlet domain = '';\n\nfor (const ev of events) {\n  const attendees = ev.attendees || [];\n  for (const a of attendees) {\n    const email = (a.emailAddress?.address || '').toLowerCase();\n    const name = a.emailAddress?.name || '';\n    if (!email) continue;\n    // Skip internal (sales) emails\n    if (salesList.some(s => email.includes(s))) continue;\n    // Skip yourcompany.com domain entirely\n    if (email.endsWith('@yourcompany.com')) continue;\n    attendeeEmails.push({ email, name });\n    // Extract domain from first external email\n    if (!domain && email.includes('@')) {\n      domain = email.split('@')[1];\n    }\n  }\n}\n\nreturn [{\n  json: {\n    ...ctx,\n    attendeeEmails,\n    externalDomain: domain,\n    attendeeNames: attendeeEmails.map(a => a.name).concat(ctx.attendeeNames || []).filter((v, i, arr) => arr.indexOf(v) === i)\n  }\n}];"
+        },
+        "id": "extract-attendee-emails",
+        "name": "Extract Attendee Emails",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3712,
+          -304
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const results = $input.first().json.results || [];\nconst RENEWAL_PIPELINE = '820213778';\n\n// Closed stage IDs (deals we consider \"closed\")\nconst closedStages = ['266058584', '266058587', '266058586', '266058588', // Sales closed\n  '1211728151', '1211728153', // Renewal closed\n  '1297403657', // CAP closed\n  '1127106359', '1127121742' // No response\n];\n\n// Separate deals into categories\nconst openNonRenewal = [];\nconst renewal = [];\nconst other = [];\n\nfor (const deal of results) {\n  const pipeline = deal.properties?.pipeline || '';\n  const stage = deal.properties?.dealstage || '';\n  const isClosed = closedStages.includes(stage);\n  \n  if (pipeline === RENEWAL_PIPELINE) {\n    renewal.push(deal);\n  } else if (!isClosed) {\n    openNonRenewal.push(deal);\n  } else {\n    other.push(deal);\n  }\n}\n\n// Pick: first open non-renewal, then renewal, then most recent anything\nconst picked = openNonRenewal[0] || renewal[0] || other[0] || results[0];\n\nif (!picked) return [];\n\nreturn [{\n  json: {\n    ...($('Extract Attendee Emails').first().json),\n    deal: picked,\n    dealId: picked.id,\n    dealName: picked.properties?.dealname || '',\n    dealProperties: picked.properties || {}\n  }\n}];"
+        },
+        "id": "pick-best-deal",
+        "name": "Pick Best Deal",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          7344,
+          -608
+        ]
+      },
+      {
+        "parameters": {
+          "url": "=https://graph.microsoft.com/v1.0/users/{{ $('Extract Attendee Emails').first().json.recordingsUser }}/drive/items/{{ $('Filter New Files').first().json.fileId }}/content",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              }
+            ]
+          },
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "file"
+              }
+            }
+          }
+        },
+        "id": "download-recording",
+        "name": "Download Recording",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          5328,
+          -304
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "audio",
+          "operation": "transcribe",
+          "options": {}
+        },
+        "id": "transcribe-whisper",
+        "name": "Transcribe (Whisper)",
+        "type": "@n8n/n8n-nodes-langchain.openAi",
+        "typeVersion": 1.8,
+        "position": [
+          5552,
+          -304
+        ],
+        "credentials": {
+          "openAiApi": {
+            "id": "d03HNhtWh3tV5wdT",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const ctx = $('Extract Attendee Emails').first().json;\nconst whisperText = $input.first().json.text || '';\n\nreturn [{\n  json: {\n    ...ctx,\n    transcript: whisperText || 'Transcript could not be generated'\n  }\n}];"
+        },
+        "id": "format-whisper",
+        "name": "Format Whisper Output",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          5776,
+          -304
+        ]
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "U09NRRBRS1K",
+            "mode": "id"
+          },
+          "text": "=:warning: *Meeting Recording Not Found*\n\n*Meeting:* {{ $('Extract Meeting Info').first().json.meetingSubject }}\n*Organizer:* {{ $('Classify Call').first().json.orgName }} ({{ $('Classify Call').first().json.orgEmail }})\n*Call Time:* {{ $('Classify Call').first().json.callStart.substring(0, 16).replace('T', ' ') }} UTC\n*Type:* {{ $('Classify Call').first().json.isSales ? 'Sales' : 'Operations' }}\n*Attendees:* {{ $('Classify Call').first().json.attendeeNames.join(', ') || 'Unknown' }}\n\n*Reason:* No matching recording file found in team@company.com Recordings folder. The file might not have been saved yet, or the meeting subject didn't match any filename.",
+          "otherOptions": {}
+        },
+        "id": "slack-no-recording",
+        "name": "Slack: No Recording Found",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          3984,
+          96
+        ],
+        "webhookId": "9348d247-f388-42ef-98ff-538143afcd9f",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const meetingInfo = $('Extract Meeting Info').first().json;\nconst classify = $('Classify Call').first().json;\nconst emails = $('Extract Attendee Emails').first().json;\nconst summary = $('Parse Summary').first().json;\n\n// Calculate duration\nlet duration = '';\nif (classify.callStart && classify.callEnd) {\n  const start = new Date(classify.callStart);\n  const end = new Date(classify.callEnd);\n  const diffMs = end - start;\n  const diffMin = Math.round(diffMs / 60000);\n  duration = diffMin + ' min';\n}\n\n// Build attendee string\nconst attendeeNames = (classify.attendeeNames || []).join(', ') || 'Unknown';\n\n// Get date (just the date part)\nconst callDate = classify.callStart ? classify.callStart.split('T')[0] : new Date().toISOString().split('T')[0];\n\n// Build summary text (max 2000 chars for Notion rich_text)\nlet summaryText = summary.slackSummary || summary.note || '';\nif (summaryText.length > 2000) {\n  summaryText = summaryText.substring(0, 1997) + '...';\n}\n\n// Build recording link from SharePoint info\nconst recordingLink = meetingInfo.recordingUrl || '';\n\nconst notionBody = {\n  parent: { database_id: \"32f2b80dedad804ca94dc95f5545abe9\" },\n  properties: {\n    \"Meeting Title\": {\n      title: [{ text: { content: meetingInfo.meetingSubject || 'Untitled Meeting' } }]\n    },\n    \"Date\": {\n      date: { start: callDate }\n    },\n    \"Attendees\": {\n      rich_text: [{ text: { content: attendeeNames } }]\n    },\n    \"Duration\": {\n      rich_text: [{ text: { content: duration } }]\n    },\n    \"Recording Link\": {\n      url: recordingLink || null\n    },\n    \"Summary\": {\n      rich_text: [{ text: { content: summaryText } }]\n    }\n  }\n};\n\nreturn [{\n  json: {\n    ...summary,\n    notionBody\n  }\n}];"
+        },
+        "id": "build-notion-body",
+        "name": "Build Notion Body",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          6896,
+          -224
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.notion.com/v1/pages",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              },
+              {
+                "name": "Notion-Version",
+                "value": "2022-06-28"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ $json.notionBody }}",
+          "options": {}
+        },
+        "id": "create-notion-page",
+        "name": "Create Notion Page",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          7120,
+          -224
+        ]
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "={{ $('Classify Call').first().json.slackChannel }}",
+            "mode": "id"
+          },
+          "text": "=:memo: *Ops Call Recorded*\n\n*Meeting:* {{ $('Extract Meeting Info').first().json.meetingSubject }}\n*Attendees:* {{ $('Classify Call').first().json.attendeeNames.join(', ') || 'Unknown' }}\n*Date:* {{ $('Classify Call').first().json.callStart }}\n*Duration:* {{ $('Build Notion Body').first().json.notionBody ? $('Build Notion Body').first().json.notionBody.properties.Duration.rich_text[0].text.content : '' }}\n\n{{ $('Parse Summary').first().json.slackSummary || 'No summary available' }}\n\n_Saved to Notion._",
+          "otherOptions": {}
+        },
+        "id": "slack-ops-summary",
+        "name": "Slack: Ops Summary",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          7344,
+          -224
+        ],
+        "webhookId": "18e4a4e3-affe-4132-a4c1-f16c907026ea",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Schedule Trigger (Every 2 Days)": {
+        "main": [
+          [
+            {
+              "node": "Get Token A (Renewal)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Token A (Renewal)": {
+        "main": [
+          [
+            {
+              "node": "Build Subscription Payload",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Subscription Payload": {
+        "main": [
+          [
+            {
+              "node": "List Existing Subscriptions",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "List Existing Subscriptions": {
+        "main": [
+          [
+            {
+              "node": "Filter Old Subs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Filter Old Subs": {
+        "main": [
+          [
+            {
+              "node": "Has Subs to Delete?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Has Subs to Delete?": {
+        "main": [
+          [
+            {
+              "node": "Delete Old Subscription",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Register Graph Subscription",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Delete Old Subscription": {
+        "main": [
+          [
+            {
+              "node": "Register Graph Subscription",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Validate & Filter Notification": {
+        "main": [
+          [
+            {
+              "node": "Get Token A",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Token A": {
+        "main": [
+          [
+            {
+              "node": "Get Call Record",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Call Record": {
+        "main": [
+          [
+            {
+              "node": "Get Organizer Profile",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sales Emails": {
+        "main": [
+          [
+            {
+              "node": "Classify Call",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Classify Call": {
+        "main": [
+          [
+            {
+              "node": "Get Calendar Event",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get SharePoint Drive": {
+        "main": [
+          [
+            {
+              "node": "Get Recordings Folder",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Filter New Files": {
+        "main": [
+          [
+            {
+              "node": "Has Files?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Has Files?": {
+        "main": [
+          [
+            {
+              "node": "Split in Batches",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Slack: No Recording Found",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split in Batches": {
+        "main": [
+          [
+            {
+              "node": "Has Meeting ID?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Prepare Copy",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Copy": {
+        "main": [
+          [
+            {
+              "node": "Copy to SharePoint",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Copy to SharePoint": {
+        "main": [
+          [
+            {
+              "node": "Extract Copy Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract Copy Data": {
+        "main": [
+          [
+            {
+              "node": "Check Copy Status",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Check Copy Status": {
+        "main": [
+          [
+            {
+              "node": "Copy Done?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Copy Done?": {
+        "main": [
+          [
+            {
+              "node": "Split in Batches",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Wait 30s",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Sales?": {
+        "main": [
+          [
+            {
+              "node": "Search Deals",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Build Notion Body",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Online Meeting": {
+        "main": [
+          [
+            {
+              "node": "Extract Meeting Info",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract Meeting Info": {
+        "main": [
+          [
+            {
+              "node": "Get SharePoint Drive",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Summary Prompt": {
+        "main": [
+          [
+            {
+              "node": "Summarize (Claude)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Summarize (Claude)": {
+        "main": [
+          [
+            {
+              "node": "Parse Summary",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parse Summary": {
+        "main": [
+          [
+            {
+              "node": "Is Sales?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Search Deals": {
+        "main": [
+          [
+            {
+              "node": "Deal Found?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Deal Found?": {
+        "main": [
+          [
+            {
+              "node": "Pick Best Deal",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Slack: No Deal Found",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create HubSpot Note": {
+        "main": [
+          [
+            {
+              "node": "Update Deal Fields",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update Deal Fields": {
+        "main": [
+          [
+            {
+              "node": "Slack: Success",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "List Transcripts": {
+        "main": [
+          [
+            {
+              "node": "Download Transcript",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Download Transcript": {
+        "main": [
+          [
+            {
+              "node": "Parse Transcript",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parse Transcript": {
+        "main": [
+          [
+            {
+              "node": "Has Transcript?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Has Transcript?": {
+        "main": [
+          [
+            {
+              "node": "Build Summary Prompt",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Download Recording",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Organizer Profile": {
+        "main": [
+          [
+            {
+              "node": "Sales Emails",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Recordings Folder": {
+        "main": [
+          [
+            {
+              "node": "Find Recordings Folder",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Find Recordings Folder": {
+        "main": [
+          [
+            {
+              "node": "List Recording Files",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "List Recording Files": {
+        "main": [
+          [
+            {
+              "node": "Filter New Files",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait 5s": {
+        "main": [
+          [
+            {
+              "node": "Get Online Meeting",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Has Meeting ID?": {
+        "main": [
+          [
+            {
+              "node": "List Transcripts",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Validate & Filter Notification",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait 30s": {
+        "main": [
+          [
+            {
+              "node": "Check Copy Status",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Calendar Event": {
+        "main": [
+          [
+            {
+              "node": "Extract Attendee Emails",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract Attendee Emails": {
+        "main": [
+          [
+            {
+              "node": "Wait 5s",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Pick Best Deal": {
+        "main": [
+          [
+            {
+              "node": "Create HubSpot Note",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Download Recording": {
+        "main": [
+          [
+            {
+              "node": "Transcribe (Whisper)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Transcribe (Whisper)": {
+        "main": [
+          [
+            {
+              "node": "Format Whisper Output",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Format Whisper Output": {
+        "main": [
+          [
+            {
+              "node": "Build Summary Prompt",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Notion Body": {
+        "main": [
+          [
+            {
+              "node": "Create Notion Page",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create Notion Page": {
+        "main": [
+          [
+            {
+              "node": "Slack: Ops Summary",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Your Name",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-26T12:59:49.661Z",
+        "id": 372,
+        "workflowId": "1OF0BsJyx3uM3kms",
+        "versionId": "9c230fd0-0423-42ff-8bb6-87fdd66c2f25",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      },
+      {
+        "createdAt": "2026-03-26T12:59:49.607Z",
+        "id": 371,
+        "workflowId": "1OF0BsJyx3uM3kms",
+        "versionId": "9c230fd0-0423-42ff-8bb6-87fdd66c2f25",
+        "event": "deactivated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    ]
+  }
+}

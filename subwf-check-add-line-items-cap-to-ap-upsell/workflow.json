@@ -1,0 +1,820 @@
+{
+  "updatedAt": "2026-03-05T16:55:24.609Z",
+  "createdAt": "2026-03-05T16:22:52.906Z",
+  "id": "6mtEQBbnBP2TaWjs",
+  "name": "YourCompany: SubWF Check + Add Line Items (CAP to AP Upsell)",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        208,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hubapi.com/crm/v4/objects/deals/{{ $json.dealId }}/associations/line_items",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "options": {}
+      },
+      "id": "5bc53cb9-d5f6-45c2-8612-5935acbd513e",
+      "name": "Hubspot: Get line item IDs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        432,
+        384
+      ],
+      "credentials": {
+        "hubspotApi": {
+          "id": "xA7Cv3rdLZvRM07y",
+          "name": "HubSpot account"
+        },
+        "hubspotDeveloperApi": {
+          "id": "wEPpNnDI5nSwDuVI",
+          "name": "YourCompany: HubSpot Developer account"
+        },
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare batch request body for HubSpot line items\nconst associations = $input.item.json.results;\nreturn [{ json: {\n  properties: [\"name\",\"quantity\",\"price\",\"amount\",\"hs_product_id\",\"hs_sku\",\"xero_account\",\"payment_terms\",\"recurringbillingfrequency\",\"hs_total_discount\"],\n  inputs: associations.map(item => ({ id: item.toObjectId.toString() }))\n}}];\n"
+      },
+      "id": "e43315a6-6c4e-4f1e-906a-d18692c0e6fe",
+      "name": "Code: Prepare line item batch request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.hubspot.com/crm/v3/objects/line_items/batch/read",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "09f480e8-b033-454b-b3ab-95bb27abc83f",
+      "name": "Hubspot: Get line items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        880,
+        384
+      ],
+      "credentials": {
+        "hubspotApi": {
+          "id": "xA7Cv3rdLZvRM07y",
+          "name": "HubSpot account"
+        },
+        "hubspotDeveloperApi": {
+          "id": "wEPpNnDI5nSwDuVI",
+          "name": "YourCompany: HubSpot Developer account"
+        },
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e8df7a81-2bff-41c1-8e7b-d9b8b3e1c70a",
+              "leftValue": "={{ $json.results }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "array",
+                "operation": "lengthEquals",
+                "rightType": "number"
+              }
+            },
+            {
+              "id": "ec0c318a-92c8-4b21-95b3-f7e44a00f2eb",
+              "leftValue": "={{ $json.results[0].properties.hs_sku }}",
+              "rightValue": "CAP",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1104,
+        384
+      ],
+      "id": "d440ef72-c884-4566-86cf-4bc62592bcef",
+      "name": "Line items = CAP only?"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        480
+      ],
+      "id": "f4162421-3780-4ac5-9918-216b01870216",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('When Executed by Another Workflow').item.json.properties.qwilr_template.value }}",
+                    "rightValue": "6979e79c2bab03b85b812aee",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "fda1f95c-1f59-42dd-86d0-a2fa3526f776"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Startup"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "86f4e181-8500-4ec4-a113-36389ea423b8",
+                    "leftValue": "={{ $('When Executed by Another Workflow').item.json.properties.qwilr_template.value }}",
+                    "rightValue": "698616785dc99b7c2d7da21c",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Scale"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1552,
+        288
+      ],
+      "id": "aa5a4fbc-2b54-4dfe-83b9-efd49d861d7f",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/line_items",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"hs_product_id\": \"40474843749\",\n    \"quantity\": \"1\",\n    \"price\": {{ $('When Executed by Another Workflow').item.json.properties.hs_forecast_amount.value }}\n  },\n  \"associations\": [\n    {\n      \"to\": {\n        \"id\": {{ $('When Executed by Another Workflow').item.json.dealId }}\n      },\n      \"types\": [\n        {\n          \"associationCategory\": \"HUBSPOT_DEFINED\",\n          \"associationTypeId\": 20\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "6ea52cb6-249e-412c-8c00-8df47824f21e",
+      "name": "AP Scale",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1776,
+        384
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/line_items",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"hs_product_id\": \"40493947155\",\n    \"quantity\": \"1\",\n    \"price\": {{ $('When Executed by Another Workflow').item.json.properties.hs_forecast_amount.value }}\n  },\n  \"associations\": [\n    {\n      \"to\": {\n        \"id\": {{ $('When Executed by Another Workflow').item.json.dealId }}\n      },\n      \"types\": [\n        {\n          \"associationCategory\": \"HUBSPOT_DEFINED\",\n          \"associationTypeId\": 20\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "e80bf5db-8488-427b-9515-71023f001055",
+      "name": "AP Startup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1776,
+        192
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://api.hubapi.com/crm/v3/objects/line_items/{{ $json.results[0].id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "options": {}
+      },
+      "id": "f91faf37-1588-40b3-96ba-e864c5662971",
+      "name": "Delete Line Items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1328,
+        288
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Hubspot: Get line item IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hubspot: Get line item IDs": {
+      "main": [
+        [
+          {
+            "node": "Code: Prepare line item batch request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Prepare line item batch request": {
+      "main": [
+        [
+          {
+            "node": "Hubspot: Get line items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hubspot: Get line items": {
+      "main": [
+        [
+          {
+            "node": "Line items = CAP only?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Line items = CAP only?": {
+      "main": [
+        [
+          {
+            "node": "Delete Line Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "AP Startup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AP Scale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Line Items": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "57a84b13-cb77-4278-b643-7de4bac881bd",
+  "activeVersionId": "57a84b13-cb77-4278-b643-7de4bac881bd",
+  "versionCounter": 94,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-05T16:22:52.914Z",
+      "createdAt": "2026-03-05T16:22:52.914Z",
+      "role": "workflow:owner",
+      "workflowId": "6mtEQBbnBP2TaWjs",
+      "projectId": "1xouAt4QdWWhUWuM",
+      "project": {
+        "updatedAt": "2025-10-13T14:48:28.241Z",
+        "createdAt": "2025-10-13T14:47:21.362Z",
+        "id": "1xouAt4QdWWhUWuM",
+        "name": "Your Name <your-email@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-05T16:55:17.000Z",
+    "createdAt": "2026-03-05T16:53:57.633Z",
+    "versionId": "57a84b13-cb77-4278-b643-7de4bac881bd",
+    "workflowId": "6mtEQBbnBP2TaWjs",
+    "nodes": [
+      {
+        "parameters": {
+          "inputSource": "passthrough"
+        },
+        "id": "c055762a-8fe7-4141-a639-df2372f30060",
+        "typeVersion": 1.1,
+        "name": "When Executed by Another Workflow",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "position": [
+          208,
+          384
+        ]
+      },
+      {
+        "parameters": {
+          "url": "=https://api.hubapi.com/crm/v4/objects/deals/{{ $json.dealId }}/associations/line_items",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "hubspotAppToken",
+          "options": {}
+        },
+        "id": "5bc53cb9-d5f6-45c2-8612-5935acbd513e",
+        "name": "Hubspot: Get line item IDs",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          432,
+          384
+        ],
+        "credentials": {
+          "hubspotApi": {
+            "id": "xA7Cv3rdLZvRM07y",
+            "name": "HubSpot account"
+          },
+          "hubspotDeveloperApi": {
+            "id": "wEPpNnDI5nSwDuVI",
+            "name": "YourCompany: HubSpot Developer account"
+          },
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Prepare batch request body for HubSpot line items\nconst associations = $input.item.json.results;\nreturn [{ json: {\n  properties: [\"name\",\"quantity\",\"price\",\"amount\",\"hs_product_id\",\"hs_sku\",\"xero_account\",\"payment_terms\",\"recurringbillingfrequency\",\"hs_total_discount\"],\n  inputs: associations.map(item => ({ id: item.toObjectId.toString() }))\n}}];\n"
+        },
+        "id": "e43315a6-6c4e-4f1e-906a-d18692c0e6fe",
+        "name": "Code: Prepare line item batch request",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          656,
+          384
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=https://api.hubspot.com/crm/v3/objects/line_items/batch/read",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "hubspotAppToken",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ $json }}",
+          "options": {}
+        },
+        "id": "09f480e8-b033-454b-b3ab-95bb27abc83f",
+        "name": "Hubspot: Get line items",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          880,
+          384
+        ],
+        "credentials": {
+          "hubspotApi": {
+            "id": "xA7Cv3rdLZvRM07y",
+            "name": "HubSpot account"
+          },
+          "hubspotDeveloperApi": {
+            "id": "wEPpNnDI5nSwDuVI",
+            "name": "YourCompany: HubSpot Developer account"
+          },
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "e8df7a81-2bff-41c1-8e7b-d9b8b3e1c70a",
+                "leftValue": "={{ $json.results }}",
+                "rightValue": 1,
+                "operator": {
+                  "type": "array",
+                  "operation": "lengthEquals",
+                  "rightType": "number"
+                }
+              },
+              {
+                "id": "ec0c318a-92c8-4b21-95b3-f7e44a00f2eb",
+                "leftValue": "={{ $json.results[0].properties.hs_sku }}",
+                "rightValue": "CAP",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1104,
+          384
+        ],
+        "id": "d440ef72-c884-4566-86cf-4bc62592bcef",
+        "name": "Line items = CAP only?"
+      },
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          1328,
+          480
+        ],
+        "id": "f4162421-3780-4ac5-9918-216b01870216",
+        "name": "No Operation, do nothing"
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $('When Executed by Another Workflow').item.json.properties.qwilr_template.value }}",
+                      "rightValue": "6979e79c2bab03b85b812aee",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "id": "fda1f95c-1f59-42dd-86d0-a2fa3526f776"
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "Startup"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "id": "86f4e181-8500-4ec4-a113-36389ea423b8",
+                      "leftValue": "={{ $('When Executed by Another Workflow').item.json.properties.qwilr_template.value }}",
+                      "rightValue": "698616785dc99b7c2d7da21c",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals",
+                        "name": "filter.operator.equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "Scale"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.4,
+        "position": [
+          1552,
+          288
+        ],
+        "id": "aa5a4fbc-2b54-4dfe-83b9-efd49d861d7f",
+        "name": "Switch"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.hubapi.com/crm/v3/objects/line_items",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "hubspotAppToken",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"properties\": {\n    \"hs_product_id\": \"40474843749\",\n    \"quantity\": \"1\",\n    \"price\": {{ $('When Executed by Another Workflow').item.json.properties.hs_forecast_amount.value }}\n  },\n  \"associations\": [\n    {\n      \"to\": {\n        \"id\": {{ $('When Executed by Another Workflow').item.json.dealId }}\n      },\n      \"types\": [\n        {\n          \"associationCategory\": \"HUBSPOT_DEFINED\",\n          \"associationTypeId\": 20\n        }\n      ]\n    }\n  ]\n}",
+          "options": {}
+        },
+        "id": "6ea52cb6-249e-412c-8c00-8df47824f21e",
+        "name": "AP Scale",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          1776,
+          384
+        ],
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.hubapi.com/crm/v3/objects/line_items",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "hubspotAppToken",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"properties\": {\n    \"hs_product_id\": \"40493947155\",\n    \"quantity\": \"1\",\n    \"price\": {{ $('When Executed by Another Workflow').item.json.properties.hs_forecast_amount.value }}\n  },\n  \"associations\": [\n    {\n      \"to\": {\n        \"id\": {{ $('When Executed by Another Workflow').item.json.dealId }}\n      },\n      \"types\": [\n        {\n          \"associationCategory\": \"HUBSPOT_DEFINED\",\n          \"associationTypeId\": 20\n        }\n      ]\n    }\n  ]\n}",
+          "options": {}
+        },
+        "id": "e80bf5db-8488-427b-9515-71023f001055",
+        "name": "AP Startup",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          1776,
+          192
+        ],
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "DELETE",
+          "url": "=https://api.hubapi.com/crm/v3/objects/line_items/{{ $json.results[0].id }}",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "hubspotAppToken",
+          "options": {}
+        },
+        "id": "f91faf37-1588-40b3-96ba-e864c5662971",
+        "name": "Delete Line Items",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1328,
+          288
+        ],
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "When Executed by Another Workflow": {
+        "main": [
+          [
+            {
+              "node": "Hubspot: Get line item IDs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hubspot: Get line item IDs": {
+        "main": [
+          [
+            {
+              "node": "Code: Prepare line item batch request",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Prepare line item batch request": {
+        "main": [
+          [
+            {
+              "node": "Hubspot: Get line items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hubspot: Get line items": {
+        "main": [
+          [
+            {
+              "node": "Line items = CAP only?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Line items = CAP only?": {
+        "main": [
+          [
+            {
+              "node": "Delete Line Items",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "No Operation, do nothing",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Switch": {
+        "main": [
+          [
+            {
+              "node": "AP Startup",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "AP Scale",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Delete Line Items": {
+        "main": [
+          [
+            {
+              "node": "Switch",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Your Name",
+    "name": "Version 57a84b13",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-05T16:55:17.022Z",
+        "id": 219,
+        "workflowId": "6mtEQBbnBP2TaWjs",
+        "versionId": "57a84b13-cb77-4278-b643-7de4bac881bd",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    ]
+  }
+}

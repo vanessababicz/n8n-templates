@@ -1,0 +1,437 @@
+{
+  "updatedAt": "2026-02-26T08:45:35.349Z",
+  "createdAt": "2026-02-24T19:37:07.108Z",
+  "id": "wfJgIotLIiAp3tyB",
+  "name": "Brain: Kanban Move",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kanban-move",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "id": "node-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        304
+      ],
+      "webhookId": "cbf8106f-7f7c-4e87-a2a8-c2e03bbd46e4"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/[github-user]/[repo]/contents/tasks/kanban.md",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-brain"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-get-kanban",
+      "name": "Get Kanban File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        480,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fileData = $input.first().json;\nconst webhookData = $('Webhook').first().json.body;\nconst task = webhookData.task;\nconst from = webhookData.from;\nconst to = webhookData.to;\n\nif (!task || !from || !to) throw new Error('Missing params');\n\nconst sha = fileData.sha;\nconst rawContent = fileData.content.replace(/\\n/g, '');\nconst content = Buffer.from(rawContent, 'base64').toString('utf8');\n\nconst sectionKeys = ['WAITING / BLOCKED', 'DONE THIS WEEK', 'IN PROGRESS', 'THIS WEEK', 'BACKLOG', 'DROPPED'];\n\nfunction detectSection(line) {\n  if (!line.startsWith('## ')) return undefined;\n  const upper = line.toUpperCase();\n  for (const key of sectionKeys) { if (upper.includes(key)) return key; }\n  return null;\n}\n\nconst lines = content.split('\\n');\nconst result = [];\nlet currentSection = null;\nlet taskRemoved = false;\nlet taskLine = null;\n\nfor (const line of lines) {\n  const sec = detectSection(line);\n  if (sec !== undefined) currentSection = sec;\n  if (line === '---') currentSection = null;\n  if (!taskRemoved && currentSection === from && (line.startsWith('- [ ]') || line.startsWith('- [x]'))) {\n    const lineText = line.replace(/^- \\[.\\]\\s*/, '').trim();\n    if (lineText === task) { taskLine = line; taskRemoved = true; continue; }\n  }\n  result.push(line);\n}\n\nif (!taskRemoved) throw new Error('Task not found in ' + from);\n\nif (to === 'DONE THIS WEEK') taskLine = taskLine.replace('- [ ]', '- [x]');\nelse taskLine = taskLine.replace('- [x]', '- [ ]');\n\nconst finalLines = [];\ncurrentSection = null;\nlet inserted = false;\n\nfor (const line of result) {\n  const sec = detectSection(line);\n  if (sec !== undefined) currentSection = sec;\n  if (line === '---') currentSection = null;\n  finalLines.push(line);\n  if (!inserted && currentSection === to && line.startsWith('>')) {\n    finalLines.push(taskLine);\n    inserted = true;\n  }\n}\n\nif (!inserted) throw new Error('Could not insert into ' + to);\n\nconst newContent = finalLines.join('\\n');\nconst encoded = Buffer.from(newContent).toString('base64');\nconst message = 'kanban: move task to ' + to;\n\nreturn [{ json: { sha: sha, encoded: encoded, message: message, task: task, from: from, to: to } }];\n"
+      },
+      "id": "node-move-task",
+      "name": "Move Task",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://api.github.com/repos/[github-user]/[repo]/contents/tasks/kanban.md",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-brain"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $('Move Task').item.json.message, content: $('Move Task').item.json.encoded, sha: $('Move Task').item.json.sha }) }}",
+        "options": {}
+      },
+      "id": "node-update-kanban",
+      "name": "Update Kanban File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        960,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, task: $('Move Task').item.json.task, from: $('Move Task').item.json.from, to: $('Move Task').item.json.to } }}",
+        "options": {}
+      },
+      "id": "node-respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1200,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Brain: Kanban Move\nReceives drag-and-drop from dashboard.\nPOST: { task, from, to }\nReads kanban.md from GitHub, moves task, commits back.\nMac cron pulls every 30s \u2192 fswatch regenerates brain-data.json \u2192 dashboard refreshes.",
+        "height": 140,
+        "width": 720
+      },
+      "id": "node-sticky",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        128
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Kanban File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Kanban File": {
+      "main": [
+        [
+          {
+            "node": "Move Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move Task": {
+      "main": [
+        [
+          {
+            "node": "Update Kanban File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Kanban File": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "3ee1c95b-f280-4653-8caa-f07d53e7fa35",
+  "activeVersionId": "3ee1c95b-f280-4653-8caa-f07d53e7fa35",
+  "versionCounter": 70,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-24T19:37:07.117Z",
+      "createdAt": "2026-02-24T19:37:07.117Z",
+      "role": "workflow:owner",
+      "workflowId": "wfJgIotLIiAp3tyB",
+      "projectId": "1xouAt4QdWWhUWuM",
+      "project": {
+        "updatedAt": "2025-10-13T14:48:28.241Z",
+        "createdAt": "2025-10-13T14:47:21.362Z",
+        "id": "1xouAt4QdWWhUWuM",
+        "name": "Your Name <your-email@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-25T08:43:49.782Z",
+    "createdAt": "2026-02-25T08:43:49.782Z",
+    "versionId": "3ee1c95b-f280-4653-8caa-f07d53e7fa35",
+    "workflowId": "wfJgIotLIiAp3tyB",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "kanban-move",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "onError": "continueRegularOutput",
+        "id": "node-webhook",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          240,
+          304
+        ],
+        "webhookId": "cbf8106f-7f7c-4e87-a2a8-c2e03bbd46e4"
+      },
+      {
+        "parameters": {
+          "method": "GET",
+          "url": "https://api.github.com/repos/[github-user]/[repo]/contents/tasks/kanban.md",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              },
+              {
+                "name": "Accept",
+                "value": "application/vnd.github+json"
+              },
+              {
+                "name": "User-Agent",
+                "value": "n8n-brain"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "node-get-kanban",
+        "name": "Get Kanban File",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          480,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const fileData = $input.first().json;\nconst webhookData = $('Webhook').first().json.body;\nconst task = webhookData.task;\nconst from = webhookData.from;\nconst to = webhookData.to;\n\nif (!task || !from || !to) throw new Error('Missing params');\n\nconst sha = fileData.sha;\nconst rawContent = fileData.content.replace(/\\n/g, '');\nconst content = Buffer.from(rawContent, 'base64').toString('utf8');\n\nconst sectionKeys = ['WAITING / BLOCKED', 'DONE THIS WEEK', 'IN PROGRESS', 'THIS WEEK', 'BACKLOG', 'DROPPED'];\n\nfunction detectSection(line) {\n  if (!line.startsWith('## ')) return undefined;\n  const upper = line.toUpperCase();\n  for (const key of sectionKeys) { if (upper.includes(key)) return key; }\n  return null;\n}\n\nconst lines = content.split('\\n');\nconst result = [];\nlet currentSection = null;\nlet taskRemoved = false;\nlet taskLine = null;\n\nfor (const line of lines) {\n  const sec = detectSection(line);\n  if (sec !== undefined) currentSection = sec;\n  if (line === '---') currentSection = null;\n  if (!taskRemoved && currentSection === from && (line.startsWith('- [ ]') || line.startsWith('- [x]'))) {\n    const lineText = line.replace(/^- \\[.\\]\\s*/, '').trim();\n    if (lineText === task) { taskLine = line; taskRemoved = true; continue; }\n  }\n  result.push(line);\n}\n\nif (!taskRemoved) throw new Error('Task not found in ' + from);\n\nif (to === 'DONE THIS WEEK') taskLine = taskLine.replace('- [ ]', '- [x]');\nelse taskLine = taskLine.replace('- [x]', '- [ ]');\n\nconst finalLines = [];\ncurrentSection = null;\nlet inserted = false;\n\nfor (const line of result) {\n  const sec = detectSection(line);\n  if (sec !== undefined) currentSection = sec;\n  if (line === '---') currentSection = null;\n  finalLines.push(line);\n  if (!inserted && currentSection === to && line.startsWith('>')) {\n    finalLines.push(taskLine);\n    inserted = true;\n  }\n}\n\nif (!inserted) throw new Error('Could not insert into ' + to);\n\nconst newContent = finalLines.join('\\n');\nconst encoded = Buffer.from(newContent).toString('base64');\nconst message = 'kanban: move task to ' + to;\n\nreturn [{ json: { sha: sha, encoded: encoded, message: message, task: task, from: from, to: to } }];\n"
+        },
+        "id": "node-move-task",
+        "name": "Move Task",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          720,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "method": "PUT",
+          "url": "https://api.github.com/repos/[github-user]/[repo]/contents/tasks/kanban.md",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              },
+              {
+                "name": "Accept",
+                "value": "application/vnd.github+json"
+              },
+              {
+                "name": "User-Agent",
+                "value": "n8n-brain"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ message: $('Move Task').item.json.message, content: $('Move Task').item.json.encoded, sha: $('Move Task').item.json.sha }) }}",
+          "options": {}
+        },
+        "id": "node-update-kanban",
+        "name": "Update Kanban File",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          960,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ { success: true, task: $('Move Task').item.json.task, from: $('Move Task').item.json.from, to: $('Move Task').item.json.to } }}",
+          "options": {}
+        },
+        "id": "node-respond",
+        "name": "Respond to Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          1200,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "content": "## Brain: Kanban Move\nReceives drag-and-drop from dashboard.\nPOST: { task, from, to }\nReads kanban.md from GitHub, moves task, commits back.\nMac cron pulls every 30s \u2192 fswatch regenerates brain-data.json \u2192 dashboard refreshes.",
+          "height": 140,
+          "width": 720
+        },
+        "id": "node-sticky",
+        "name": "Sticky Note",
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          240,
+          128
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Get Kanban File",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Kanban File": {
+        "main": [
+          [
+            {
+              "node": "Move Task",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Move Task": {
+        "main": [
+          [
+            {
+              "node": "Update Kanban File",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update Kanban File": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Your Name",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-25T08:43:49.864Z",
+        "id": 86,
+        "workflowId": "wfJgIotLIiAp3tyB",
+        "versionId": "3ee1c95b-f280-4653-8caa-f07d53e7fa35",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      },
+      {
+        "createdAt": "2026-02-25T08:44:12.267Z",
+        "id": 88,
+        "workflowId": "wfJgIotLIiAp3tyB",
+        "versionId": "3ee1c95b-f280-4653-8caa-f07d53e7fa35",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      },
+      {
+        "createdAt": "2026-02-25T08:43:49.840Z",
+        "id": 85,
+        "workflowId": "wfJgIotLIiAp3tyB",
+        "versionId": "3ee1c95b-f280-4653-8caa-f07d53e7fa35",
+        "event": "deactivated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      },
+      {
+        "createdAt": "2026-02-25T08:44:01.275Z",
+        "id": 87,
+        "workflowId": "wfJgIotLIiAp3tyB",
+        "versionId": "3ee1c95b-f280-4653-8caa-f07d53e7fa35",
+        "event": "deactivated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    ]
+  }
+}

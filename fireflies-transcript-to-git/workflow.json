@@ -1,0 +1,604 @@
+{
+  "updatedAt": "2026-03-06T17:55:24.756Z",
+  "createdAt": "2026-03-02T06:57:58.098Z",
+  "id": "l2fIER8oL4MWXkzH",
+  "name": "Brain: Fireflies Transcript to Git",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fireflies",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        128
+      ],
+      "id": "df83198d-ade9-4e6b-8af4-f359c7dc0e7a",
+      "name": "Webhook",
+      "webhookId": "048c7af5-84db-44c7-ba9a-1e973c5ff67a"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "token-check",
+              "leftValue": "={{ $json.headers.authorization }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "7540ec003fb045799818f4073b601c"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        128
+      ],
+      "id": "validate-token",
+      "name": "Validate Token"
+    },
+    {
+      "parameters": {
+        "transcriptId": "={{ $json.body.meetingId }}"
+      },
+      "type": "@firefliesai/n8n-nodes-fireflies.fireflies",
+      "typeVersion": 1,
+      "position": [
+        448,
+        128
+      ],
+      "id": "1594dd42-5f70-4bb2-b173-28a62bba2edf",
+      "name": "Get Transcript",
+      "credentials": {
+        "firefliesApi": {
+          "id": "Mqtugf2kOvBlF7W4",
+          "name": "Fireflies account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const transcript = $json.data || $json;\n\n// Build filename: YYYY-MM-DD_title.md\nconst date = transcript.date \n  ? new Date(transcript.date).toISOString().split('T')[0]\n  : new Date().toISOString().split('T')[0];\n\nconst rawTitle = transcript.title || 'untitled';\nconst slug = rawTitle\n  .toLowerCase()\n  .replace(/[^a-z0-9]+/g, '-')\n  .replace(/^-|-$/g, '')\n  .substring(0, 60);\n\nconst filename = `${date}_${slug}.md`;\n\n// Build transcript content\nconst sentences = (transcript.sentences || []).map(s => {\n  const speaker = s.speaker_name || s.speaker || 'Unknown';\n  const text = s.text || s.raw_text || '';\n  return `**${speaker}:** ${text}`;\n}).join('\\n\\n');\n\nconst content = `# ${transcript.title || 'Untitled Meeting'}\\n\\n**Date:** ${date}  \\n**Duration:** ${transcript.duration ? Math.round(transcript.duration / 60) + ' min' : 'N/A'}  \\n**Organizer:** ${transcript.organizer_email || 'N/A'}  \\n**Participants:** ${(transcript.participants || []).join(', ') || 'N/A'}\\n\\n---\\n\\n## Transcript\\n\\n${sentences || '_No transcript text available._'}\\n`;\n\nreturn [{ json: { filename, content, path: `clients/yourcompany/sales-calls/${filename}` } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        128
+      ],
+      "id": "build-file",
+      "name": "Build File"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { filename, content, path } = $json;\nconst encoded = Buffer.from(content).toString('base64');\nreturn [{ json: { filename, content, path, contentBase64: encoded } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        128
+      ],
+      "id": "encode-content",
+      "name": "Base64 Encode"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/[github-user]/[repo]/contents/{{ $json.path }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1168,
+        128
+      ],
+      "id": "get-existing-file",
+      "name": "Get Existing SHA"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fileData = $json;\nconst prev = $('Base64 Encode').first().json;\n\nconst body = {\n  message: `transcript: ${prev.filename}`,\n  content: prev.contentBase64,\n  branch: 'main'\n};\n\nif (fileData.sha) {\n  body.sha = fileData.sha;\n}\n\nconst slackBody = JSON.stringify({\n  channel: '[slack-channel-id]',\n  text: `:white_check_mark: *New sales call transcript saved*\\n\\n*File:* \\`${prev.filename}\\`\\n*Path:* \\`clients/yourcompany/sales-calls/${prev.filename}\\``\n});\n\nreturn [{ json: { path: prev.path, body: JSON.stringify(body), filename: prev.filename, slackBody } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1408,
+        128
+      ],
+      "id": "build-commit-body",
+      "name": "Build Commit Body"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.github.com/repos/[github-user]/[repo]/contents/{{ $json.path }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[your-auth-header]"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.parse($json.body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1648,
+        128
+      ],
+      "id": "commit-to-github",
+      "name": "Commit to GitHub"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Token": {
+      "main": [
+        [
+          {
+            "node": "Get Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get Transcript": {
+      "main": [
+        [
+          {
+            "node": "Build File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build File": {
+      "main": [
+        [
+          {
+            "node": "Base64 Encode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Base64 Encode": {
+      "main": [
+        [
+          {
+            "node": "Get Existing SHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing SHA": {
+      "main": [
+        [
+          {
+            "node": "Build Commit Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Commit Body": {
+      "main": [
+        [
+          {
+            "node": "Commit to GitHub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Commit to GitHub": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "8ef9d66a-0a67-419b-8dae-5bd706b3c9d2",
+  "activeVersionId": "8ef9d66a-0a67-419b-8dae-5bd706b3c9d2",
+  "versionCounter": 100,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-03-03T08:52:20.161Z",
+      "createdAt": "2026-03-03T08:52:20.161Z",
+      "role": "workflow:owner",
+      "workflowId": "l2fIER8oL4MWXkzH",
+      "projectId": "1xouAt4QdWWhUWuM",
+      "project": {
+        "updatedAt": "2025-10-13T14:48:28.241Z",
+        "createdAt": "2025-10-13T14:47:21.362Z",
+        "id": "1xouAt4QdWWhUWuM",
+        "name": "Your Name <your-email@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-06T17:55:26.000Z",
+    "createdAt": "2026-03-06T17:55:24.757Z",
+    "versionId": "8ef9d66a-0a67-419b-8dae-5bd706b3c9d2",
+    "workflowId": "l2fIER8oL4MWXkzH",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "fireflies",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          0,
+          128
+        ],
+        "id": "df83198d-ade9-4e6b-8af4-f359c7dc0e7a",
+        "name": "Webhook",
+        "webhookId": "048c7af5-84db-44c7-ba9a-1e973c5ff67a"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "token-check",
+                "leftValue": "={{ $json.headers.authorization }}",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                },
+                "rightValue": "7540ec003fb045799818f4073b601c"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          208,
+          128
+        ],
+        "id": "validate-token",
+        "name": "Validate Token"
+      },
+      {
+        "parameters": {
+          "transcriptId": "={{ $json.body.meetingId }}"
+        },
+        "type": "@firefliesai/n8n-nodes-fireflies.fireflies",
+        "typeVersion": 1,
+        "position": [
+          448,
+          128
+        ],
+        "id": "1594dd42-5f70-4bb2-b173-28a62bba2edf",
+        "name": "Get Transcript",
+        "credentials": {
+          "firefliesApi": {
+            "id": "Mqtugf2kOvBlF7W4",
+            "name": "Fireflies account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const transcript = $json.data || $json;\n\n// Build filename: YYYY-MM-DD_title.md\nconst date = transcript.date \n  ? new Date(transcript.date).toISOString().split('T')[0]\n  : new Date().toISOString().split('T')[0];\n\nconst rawTitle = transcript.title || 'untitled';\nconst slug = rawTitle\n  .toLowerCase()\n  .replace(/[^a-z0-9]+/g, '-')\n  .replace(/^-|-$/g, '')\n  .substring(0, 60);\n\nconst filename = `${date}_${slug}.md`;\n\n// Build transcript content\nconst sentences = (transcript.sentences || []).map(s => {\n  const speaker = s.speaker_name || s.speaker || 'Unknown';\n  const text = s.text || s.raw_text || '';\n  return `**${speaker}:** ${text}`;\n}).join('\\n\\n');\n\nconst content = `# ${transcript.title || 'Untitled Meeting'}\\n\\n**Date:** ${date}  \\n**Duration:** ${transcript.duration ? Math.round(transcript.duration / 60) + ' min' : 'N/A'}  \\n**Organizer:** ${transcript.organizer_email || 'N/A'}  \\n**Participants:** ${(transcript.participants || []).join(', ') || 'N/A'}\\n\\n---\\n\\n## Transcript\\n\\n${sentences || '_No transcript text available._'}\\n`;\n\nreturn [{ json: { filename, content, path: `clients/yourcompany/sales-calls/${filename}` } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          688,
+          128
+        ],
+        "id": "build-file",
+        "name": "Build File"
+      },
+      {
+        "parameters": {
+          "jsCode": "const { filename, content, path } = $json;\nconst encoded = Buffer.from(content).toString('base64');\nreturn [{ json: { filename, content, path, contentBase64: encoded } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          928,
+          128
+        ],
+        "id": "encode-content",
+        "name": "Base64 Encode"
+      },
+      {
+        "parameters": {
+          "url": "=https://api.github.com/repos/[github-user]/[repo]/contents/{{ $json.path }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              },
+              {
+                "name": "Accept",
+                "value": "application/vnd.github+json"
+              },
+              {
+                "name": "X-GitHub-Api-Version",
+                "value": "2022-11-28"
+              }
+            ]
+          },
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true,
+                "responseFormat": "json"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1168,
+          128
+        ],
+        "id": "get-existing-file",
+        "name": "Get Existing SHA"
+      },
+      {
+        "parameters": {
+          "jsCode": "const fileData = $json;\nconst prev = $('Base64 Encode').first().json;\n\nconst body = {\n  message: `transcript: ${prev.filename}`,\n  content: prev.contentBase64,\n  branch: 'main'\n};\n\nif (fileData.sha) {\n  body.sha = fileData.sha;\n}\n\nconst slackBody = JSON.stringify({\n  channel: '[slack-channel-id]',\n  text: `:white_check_mark: *New sales call transcript saved*\\n\\n*File:* \\`${prev.filename}\\`\\n*Path:* \\`clients/yourcompany/sales-calls/${prev.filename}\\``\n});\n\nreturn [{ json: { path: prev.path, body: JSON.stringify(body), filename: prev.filename, slackBody } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1408,
+          128
+        ],
+        "id": "build-commit-body",
+        "name": "Build Commit Body"
+      },
+      {
+        "parameters": {
+          "method": "PUT",
+          "url": "=https://api.github.com/repos/[github-user]/[repo]/contents/{{ $json.path }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "[your-auth-header]"
+              },
+              {
+                "name": "Accept",
+                "value": "application/vnd.github+json"
+              },
+              {
+                "name": "X-GitHub-Api-Version",
+                "value": "2022-11-28"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.parse($json.body) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1648,
+          128
+        ],
+        "id": "commit-to-github",
+        "name": "Commit to GitHub"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Validate Token",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Validate Token": {
+        "main": [
+          [
+            {
+              "node": "Get Transcript",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Get Transcript": {
+        "main": [
+          [
+            {
+              "node": "Build File",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build File": {
+        "main": [
+          [
+            {
+              "node": "Base64 Encode",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Base64 Encode": {
+        "main": [
+          [
+            {
+              "node": "Get Existing SHA",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Existing SHA": {
+        "main": [
+          [
+            {
+              "node": "Build Commit Body",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Commit Body": {
+        "main": [
+          [
+            {
+              "node": "Commit to GitHub",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Commit to GitHub": {
+        "main": [
+          []
+        ]
+      }
+    },
+    "authors": "Your Name",
+    "name": "Version 8ef9d66a",
+    "description": "",
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-06T17:55:26.123Z",
+        "id": 235,
+        "workflowId": "l2fIER8oL4MWXkzH",
+        "versionId": "8ef9d66a-0a67-419b-8dae-5bd706b3c9d2",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    ]
+  }
+}

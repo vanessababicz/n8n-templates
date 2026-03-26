@@ -1,0 +1,452 @@
+{
+  "updatedAt": "2026-02-26T08:45:53.997Z",
+  "createdAt": "2026-02-24T08:28:28.336Z",
+  "id": "tCSpxgYftSCZFpYi",
+  "name": "N8n Auto-Update Notification",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5678/healthz",
+        "options": {}
+      },
+      "id": "2",
+      "name": "Get Container Uptime",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        464,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst now = new Date();\n\n// Get current version and uptime from n8n\nlet versionCli, uptimeSeconds;\ntry {\n  const settings = await $http.request({\n    method: 'GET',\n    url: 'http://localhost:5678/rest/settings',\n    headers: { 'Accept': 'application/json' }\n  });\n  versionCli = settings.data?.versionCli || 'unknown';\n} catch(e) {\n  versionCli = 'unknown';\n}\n\ntry {\n  const health = await $http.request({\n    method: 'GET',\n    url: 'http://localhost:5678/healthz',\n    headers: { 'Accept': 'application/json' }\n  });\n  // healthz returns { status: 'ok' } \u2014 not useful for uptime\n  // So we'll rely on version tracking only\n} catch(e) {}\n\n// First run \u2014 store baseline, don't notify\nif (!staticData.lastVersion) {\n  staticData.lastVersion = versionCli;\n  staticData.lastCheckTime = now.toISOString();\n  return [{ json: { updated: false, reason: 'First run \u2014 baseline stored', version: versionCli } }];\n}\n\n// Version changed = n8n was updated\nif (versionCli !== 'unknown' && versionCli !== staticData.lastVersion) {\n  const prevVersion = staticData.lastVersion;\n  staticData.lastVersion = versionCli;\n  staticData.lastCheckTime = now.toISOString();\n  return [{ json: { updated: true, previousVersion: prevVersion, currentVersion: versionCli, detectedAt: now.toISOString() } }];\n}\n\n// No change\nstaticData.lastCheckTime = now.toISOString();\nreturn [{ json: { updated: false, reason: 'No version change', version: versionCli } }];\n"
+      },
+      "id": "3",
+      "name": "Check Docker Uptime",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond1",
+              "leftValue": "={{ $json.updated }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4",
+      "name": "Was Updated?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        912,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5678/rest/settings",
+        "options": {}
+      },
+      "id": "5",
+      "name": "Get n8n Version",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "subject": "\u2705 n8n updated: {{ $('Check Docker Uptime').item.json.previousVersion }} \u2192 {{ $('Check Docker Uptime').item.json.currentVersion }}",
+        "bodyContent": "=<h2>n8n was updated</h2><p><strong>Previous version:</strong> {{ $('Check Docker Uptime').item.json.previousVersion }}</p><p><strong>New version:</strong> {{ $('Check Docker Uptime').item.json.currentVersion }}</p><p><strong>Detected at:</strong> {{ $('Check Docker Uptime').item.json.detectedAt }}</p><p>Your workflows are running normally. No action needed.</p><p><a href=\"https://[your-n8n-domain]\">Open n8n</a></p>"
+      },
+      "id": "6",
+      "name": "Send Email Notification",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        208
+      ],
+      "webhookId": "0e285bdc-442d-4063-af1b-4600a549430f",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "azOFMTypy2ecR4Sk",
+          "name": "Your Name's Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "7",
+      "name": "No Update",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        432
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Container Uptime",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Container Uptime": {
+      "main": [
+        [
+          {
+            "node": "Check Docker Uptime",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Docker Uptime": {
+      "main": [
+        [
+          {
+            "node": "Was Updated?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Was Updated?": {
+      "main": [
+        [
+          {
+            "node": "Get n8n Version",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get n8n Version": {
+      "main": [
+        [
+          {
+            "node": "Send Email Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/London",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": {
+    "node:Schedule Trigger": {
+      "recurrenceRules": []
+    },
+    "global": {
+      "lastSeenStartTime": "2026-02-24T14:00:36.062Z",
+      "lastCheckTime": "2026-02-24T14:00:36.062Z"
+    }
+  },
+  "meta": null,
+  "pinData": {},
+  "versionId": "f7bfa99c-6447-4363-b77c-a2dd8582e80b",
+  "activeVersionId": "f7bfa99c-6447-4363-b77c-a2dd8582e80b",
+  "versionCounter": 57,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-24T08:28:28.344Z",
+      "createdAt": "2026-02-24T08:28:28.344Z",
+      "role": "workflow:owner",
+      "workflowId": "tCSpxgYftSCZFpYi",
+      "projectId": "1xouAt4QdWWhUWuM",
+      "project": {
+        "updatedAt": "2025-10-13T14:48:28.241Z",
+        "createdAt": "2025-10-13T14:47:21.362Z",
+        "id": "1xouAt4QdWWhUWuM",
+        "name": "Your Name <your-email@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-24T14:22:05.570Z",
+    "createdAt": "2026-02-24T14:22:05.570Z",
+    "versionId": "f7bfa99c-6447-4363-b77c-a2dd8582e80b",
+    "workflowId": "tCSpxgYftSCZFpYi",
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "hours"
+              }
+            ]
+          }
+        },
+        "id": "1",
+        "name": "Schedule Trigger",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          240,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "url": "http://localhost:5678/healthz",
+          "options": {}
+        },
+        "id": "2",
+        "name": "Get Container Uptime",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          464,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst now = new Date();\n\n// Get current version and uptime from n8n\nlet versionCli, uptimeSeconds;\ntry {\n  const settings = await $http.request({\n    method: 'GET',\n    url: 'http://localhost:5678/rest/settings',\n    headers: { 'Accept': 'application/json' }\n  });\n  versionCli = settings.data?.versionCli || 'unknown';\n} catch(e) {\n  versionCli = 'unknown';\n}\n\ntry {\n  const health = await $http.request({\n    method: 'GET',\n    url: 'http://localhost:5678/healthz',\n    headers: { 'Accept': 'application/json' }\n  });\n  // healthz returns { status: 'ok' } \u2014 not useful for uptime\n  // So we'll rely on version tracking only\n} catch(e) {}\n\n// First run \u2014 store baseline, don't notify\nif (!staticData.lastVersion) {\n  staticData.lastVersion = versionCli;\n  staticData.lastCheckTime = now.toISOString();\n  return [{ json: { updated: false, reason: 'First run \u2014 baseline stored', version: versionCli } }];\n}\n\n// Version changed = n8n was updated\nif (versionCli !== 'unknown' && versionCli !== staticData.lastVersion) {\n  const prevVersion = staticData.lastVersion;\n  staticData.lastVersion = versionCli;\n  staticData.lastCheckTime = now.toISOString();\n  return [{ json: { updated: true, previousVersion: prevVersion, currentVersion: versionCli, detectedAt: now.toISOString() } }];\n}\n\n// No change\nstaticData.lastCheckTime = now.toISOString();\nreturn [{ json: { updated: false, reason: 'No version change', version: versionCli } }];\n"
+        },
+        "id": "3",
+        "name": "Check Docker Uptime",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          688,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "cond1",
+                "leftValue": "={{ $json.updated }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "4",
+        "name": "Was Updated?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          912,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "url": "http://localhost:5678/rest/settings",
+          "options": {}
+        },
+        "id": "5",
+        "name": "Get n8n Version",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1120,
+          208
+        ]
+      },
+      {
+        "parameters": {
+          "subject": "\u2705 n8n updated: {{ $('Check Docker Uptime').item.json.previousVersion }} \u2192 {{ $('Check Docker Uptime').item.json.currentVersion }}",
+          "bodyContent": "=<h2>n8n was updated</h2><p><strong>Previous version:</strong> {{ $('Check Docker Uptime').item.json.previousVersion }}</p><p><strong>New version:</strong> {{ $('Check Docker Uptime').item.json.currentVersion }}</p><p><strong>Detected at:</strong> {{ $('Check Docker Uptime').item.json.detectedAt }}</p><p>Your workflows are running normally. No action needed.</p><p><a href=\"https://[your-n8n-domain]\">Open n8n</a></p>"
+        },
+        "id": "6",
+        "name": "Send Email Notification",
+        "type": "n8n-nodes-base.microsoftOutlook",
+        "typeVersion": 2,
+        "position": [
+          1344,
+          208
+        ],
+        "webhookId": "0e285bdc-442d-4063-af1b-4600a549430f",
+        "credentials": {
+          "microsoftOutlookOAuth2Api": {
+            "id": "azOFMTypy2ecR4Sk",
+            "name": "Your Name's Microsoft Outlook account"
+          }
+        }
+      },
+      {
+        "parameters": {},
+        "id": "7",
+        "name": "No Update",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          1120,
+          432
+        ]
+      }
+    ],
+    "connections": {
+      "Schedule Trigger": {
+        "main": [
+          [
+            {
+              "node": "Get Container Uptime",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Container Uptime": {
+        "main": [
+          [
+            {
+              "node": "Check Docker Uptime",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Check Docker Uptime": {
+        "main": [
+          [
+            {
+              "node": "Was Updated?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Was Updated?": {
+        "main": [
+          [
+            {
+              "node": "Get n8n Version",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "No Update",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get n8n Version": {
+        "main": [
+          [
+            {
+              "node": "Send Email Notification",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Your Name",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-24T14:22:05.677Z",
+        "id": 61,
+        "workflowId": "tCSpxgYftSCZFpYi",
+        "versionId": "f7bfa99c-6447-4363-b77c-a2dd8582e80b",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    ]
+  }
+}

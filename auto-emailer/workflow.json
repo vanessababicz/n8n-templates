@@ -1,0 +1,1890 @@
+{
+  "updatedAt": "2026-03-17T13:56:55.961Z",
+  "createdAt": "2026-02-23T14:40:12.440Z",
+  "id": "Yr2B0TP0DkF8mBWH",
+  "name": "YourCompany: Auto emailer",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "emailer",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        272,
+        -352
+      ],
+      "id": "a3ed26e7-3b77-4a37-ae3b-397f17561671",
+      "name": "Webhook",
+      "webhookId": "ca06e3be-d1de-42bb-94d1-62b5f4a4334c"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b7496e04-c3dc-4ee9-930d-3703d6fae88d",
+                    "leftValue": "={{ ['266058586', '1297403657', '1211728151'].includes($json.dealStage) }}",
+                    "rightValue": "={{ ['266058586', '1297403657', '1211728151'].includes($json.body[0].propertyValue) }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Proposal Signed (All)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.dealStage }}",
+                    "rightValue": "1090810628",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "b07c2d6d-c949-4310-bd20-9e1766a5b111"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "CAP Completed (Drata CAP)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b18c6909-8fe6-4d40-8334-e6e279838505",
+                    "leftValue": "={{ $json.dealStage }}",
+                    "rightValue": "266058587",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Lead Closed (Sales)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1392,
+        -368
+      ],
+      "id": "47bde3bb-67df-4a9f-a21e-0c11be2afe8a",
+      "name": "Which Stage?"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "deal",
+        "operation": "get",
+        "dealId": {
+          "__rl": true,
+          "value": "={{ $('Webhook').item.json.body[0].objectId }}",
+          "mode": "id"
+        },
+        "filters": {
+          "includePropertyVersions": false,
+          "propertiesCollection": {
+            "propertiesValues": {
+              "properties": [
+                "dealname",
+                "dealstage",
+                "engagement"
+              ],
+              "propertyMode": "valueOnly"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        496,
+        -352
+      ],
+      "id": "00357e53-7638-472f-8c35-fc7ca2c2946a",
+      "name": "Get a deal",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "operation": "get",
+        "contactId": {
+          "__rl": true,
+          "value": "={{ $json.contact }}",
+          "mode": "id"
+        },
+        "additionalFields": {
+          "formSubmissionMode": "none",
+          "listMemberships": false,
+          "propertiesCollection": {
+            "propertiesValues": {
+              "properties": [
+                "email",
+                "firstname",
+                "company"
+              ],
+              "propertyMode": "valueOnly"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        944,
+        -352
+      ],
+      "id": "5e5687ea-4099-48f5-ba2f-1a23cb7f9208",
+      "name": "Get a contact",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "associations.associatedVids",
+        "options": {
+          "destinationFieldName": "contact"
+        }
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        720,
+        -352
+      ],
+      "id": "daf58f99-455e-47f8-b07e-3c5489896dd5",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "jsCode": "const contacts = $input.all().map(item => item.json);\n\nconst sorted = [...contacts].sort((a, b) =>\n  parseInt(a.properties.createdate.value) - parseInt(b.properties.createdate.value)\n);\n\nconst primaryContact = {\n  firstName: sorted[0].properties.firstname?.value || '',\n  lastName: sorted[0].properties.lastname?.value || '',\n  email: sorted[0].properties.email?.value || ''\n};\n\nconst teamContacts = sorted.slice(1).map(c => ({\n  firstName: c.properties.firstname?.value || '',\n  lastName: c.properties.lastname?.value || '',\n  email: c.properties.email?.value || ''\n}));\n\nconst allContacts = sorted.map(c => ({\n  firstName: c.properties.firstname?.value || '',\n  lastName: c.properties.lastname?.value || '',\n  email: c.properties.email?.value || ''\n}));\n\nconst companyName = sorted[0].properties.company?.value || '';\nconst dealName = $('Get a deal').first().json.properties.dealname?.value || '';\n\n// Clean company name: use companyName, fall back to dealName stripped of suffixes\nlet cleanCompanyName = companyName;\nif (!cleanCompanyName && dealName) {\n  cleanCompanyName = dealName\n    .replace(/\\s*-\\s*(Renewal|renewal).*$/, '')\n    .replace(/\\s+(Achievement Plan|Accelerator Plan|Assurance Plan|vCISO|MSSP).*$/, '')\n    .trim();\n}\nif (!cleanCompanyName) cleanCompanyName = dealName || 'Unknown';\nconst rawEngagement = ($('Get a deal').first().json.properties.engagement?.value || '').trim();\nconst dealStage = $('Get a deal').first().json.properties.dealstage.value;\nconst dealId = $('Webhook').first().json.body[0].objectId;\n\n// Pick single engagement + text\nlet engagement;\nlet engagementText;\nconst subscriptions = ['MSSP', 'Assurance Plan', 'vCISO'];\nconst parts = rawEngagement.split(';').map(p => p.trim()).filter(Boolean);\n\nif (!rawEngagement || rawEngagement === 'Accelerator Plan') {\n  engagement = rawEngagement || '';\n  engagementText = 'Our engagement was completed \ud83c\udf89';\n} else if (parts.includes('Achievement Plan')) {\n  engagement = 'Achievement Plan';\n  engagementText = 'Your Achievement Plan was completed \ud83c\udf89';\n} else {\n  const services = parts.filter(p => !subscriptions.includes(p));\n  const subs = parts.filter(p => subscriptions.includes(p));\n\n  if (services.length > 0) {\n    engagement = services[0];\n    engagementText = `Your ${services[0]} was completed \ud83c\udf89`;\n  } else if (subs.length > 0) {\n    const sub = subs[0];\n    engagement = sub;\n    if (sub === 'MSSP') {\n      engagementText = 'Your subscription just ended';\n    } else if (sub === 'Assurance Plan') {\n      engagementText = 'Your Assurance Plan just ended';\n    } else if (sub === 'vCISO') {\n      engagementText = 'Your vCISO just ended';\n    }\n  } else {\n    engagement = parts[0];\n    engagementText = `Your ${parts[0]} was completed \ud83c\udf89`;\n  }\n}\n\nreturn [{\n  json: {\n    primaryContact,\n    teamContacts,\n    allContacts,\n    companyName,\n    cleanCompanyName,\n    engagement,\n    engagementText,\n    dealStage,\n    dealId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        -352
+      ],
+      "id": "5a786bee-b306-4bfb-a7d6-3d074144e531",
+      "name": "Organize Info"
+    },
+    {
+      "parameters": {
+        "toRecipients": "={{ $json.allContacts.map(c => c.email).join(',') }}",
+        "subject": "={{ $json.cleanCompanyName }} Onboarding at YourCompany",
+        "bodyContent": "=[YOUR-EMAIL-SIGNATURE-HTML]",
+        "additionalFields": {
+          "ccRecipients": "={{ $('Organize Info').item.json.teamContacts.length === 0 ? 'team@company.com' : [...$('Organize Info').item.json.teamContacts.map(c => c.email), 'team@company.com'].join(',') }}",
+          "bodyContentType": "html"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        3392,
+        -448
+      ],
+      "id": "a0acda3c-2f1d-4088-b127-18d1b8d583ff",
+      "name": "Wrap-Up Call Request CAP",
+      "webhookId": "a433cb1e-6453-4068-931d-4cf96c75bc77",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "azOFMTypy2ecR4Sk",
+          "name": "Your Name's Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "={{ $('Organize Info').item.json.primaryContact.email }}",
+        "subject": "=Book your Wrap-Up",
+        "bodyContent": "=Hi {{ $('Organize Info').item.json.primaryContact.firstName }},\n<br><br>\n{{ $('Organize Info').item.json.engagementText }} I'd love to get 15 minutes with you to walk through where you stand and what the road ahead looks like.\n<br><br>\nIn our wrap-up call we'll cover:<br>\n- Quick recap of your deliverables<br>\n- Your current GRC platform completion status and remaining milestones<br>\n- Overview of what it takes to get audit-ready or maintain your certification<br>\n- Your questions\n<br><br>\nNo homework, just show up.\n<br><br>\n\ud83d\udc49 <a href=\"https://meetings.hubspot.com/yourcompany-team/cap-wrap-up?company={{ $('Organize Info').item.json.cleanCompanyName }}\">Book your 15-minute Wrap-Up here</a>\n<br><br>\nGot questions before booking? Just reply to this email. I'm happy to help.\n<br><br>\nBest,\n<br><br>\n[YOUR-EMAIL-SIGNATURE-HTML]",
+        "additionalFields": {
+          "ccRecipients": "={{ $('Organize Info').item.json.teamContacts.length === 0 ? 'team@company.com' : [...$('Organize Info').item.json.teamContacts.map(c => c.email), 'team@company.com'].join(',') }}",
+          "bodyContentType": "html"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        3616,
+        -256
+      ],
+      "id": "64c6c9d6-2e96-42f9-a19e-ce999e083d3a",
+      "name": "Wrap-Up Call Request Sales",
+      "webhookId": "a433cb1e-6453-4068-931d-4cf96c75bc77",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "azOFMTypy2ecR4Sk",
+          "name": "Your Name's Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "specificTime",
+        "dateTime": "={{ DateTime.now().plus({ days: DateTime.now().weekday >= 5 ? (8 -            \n  DateTime.now().weekday) : 1 }).set({ hour: 9, minute: 0, second: 0,          \n  millisecond: 0 }).toISO() }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2944,
+        -160
+      ],
+      "id": "dd07738a-91fb-4321-9bb7-89c73e0d759a",
+      "name": "Wait until next business day 9 AM CET - Sales",
+      "webhookId": "9cc1756c-7646-43db-99a6-cb4a1a06e6ea"
+    },
+    {
+      "parameters": {
+        "resume": "specificTime",
+        "dateTime": "={{ DateTime.now().plus({ days: DateTime.now().weekday >= 5 ? (8 -            \n  DateTime.now().weekday) : 1 }).set({ hour: 9, minute: 0, second: 0,          \n  millisecond: 0 }).toISO() }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2944,
+        -544
+      ],
+      "id": "e140f29a-416c-4d81-923b-5b319a535db1",
+      "name": "Wait until next business day 9 AM CET - CAP",
+      "webhookId": "9cc1756c-7646-43db-99a6-cb4a1a06e6ea"
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "hours"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3392,
+        -256
+      ],
+      "id": "fb5eb486-7f19-45d4-bf68-0454f37abb94",
+      "name": "Wait 1h - Sales",
+      "webhookId": "6981b9a7-e1bf-4177-b7e8-93674bc79233"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "allContacts",
+        "include": "selectedOtherFields",
+        "fieldsToInclude": "companyName",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        3168,
+        -640
+      ],
+      "id": "8c09cda4-dfff-45c5-9f29-d47a4fdf765d",
+      "name": "Split Contacts - CAP"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "allContacts",
+        "include": "selectedOtherFields",
+        "fieldsToInclude": "companyName",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        3168,
+        -64
+      ],
+      "id": "50c27b36-5014-4d57-bc8c-b1a502c3cf7a",
+      "name": "Split Contacts - Sales"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1307c36-94b5-4675-83de-f091929b5899",
+              "leftValue": "={{ $json.engagement }}",
+              "rightValue": "MSSP",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "4e0ca266-b4b3-4926-bdf6-a2c522feec38",
+              "leftValue": "={{ $json.engagement }}",
+              "rightValue": "vCISO",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "81e0ef32-a962-4efa-9494-c8f73f5fae73",
+              "leftValue": "={{ $json.engagement }}",
+              "rightValue": "Assurance Plan",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3168,
+        -256
+      ],
+      "id": "b921da16-43b8-4219-a3c8-718bbe9c47a2",
+      "name": "Is subscription?"
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "hours"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3168,
+        -448
+      ],
+      "id": "0f8eb5d2-ce99-404d-a41f-be7e0035ee25",
+      "name": "Wait 1h - CAP",
+      "webhookId": "6981b9a7-e1bf-4177-b7e8-93674bc79233"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "[slack-channel-id]",
+          "mode": "list",
+          "cachedResultName": "sales-notifications"
+        },
+        "text": "=\u2709\ufe0f *Auto email {{ $json.cleanCompanyName }} for review*\n\n*Engagement:* {{ $json.engagement }}\n*Stage:* {{ $json.dealStage === '1090810628' ? 'CAP Completed (Drata CAP)' : $json.dealStage === '266058587' ? 'Lead Closed (Sales)' : $json.dealStage }}\n*Primary contact:* {{ $json.primaryContact.firstName }} {{ $json.primaryContact.lastName }} ({{ $json.primaryContact.email }})\n*All contacts:* {{ $json.allContacts.map(c => c.firstName + ' ' + c.lastName + ' <' + c.email + '>').join(', ') }}\n\n<https://app.hubspot.com/contacts/[hubspot-portal-id]/record/0-3/{{ $json.dealId }}|View deal in HubSpot>\n\n<{{ $execution.resumeUrl }}?action=approve|\u2705 Approve & Send>  |  <{{ $execution.resumeUrl }}?action=reject|\u274c Reject>",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1616,
+        -256
+      ],
+      "id": "slack-approve-email",
+      "name": "Slack: Approve email?",
+      "webhookId": "approve-emailer-slack",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {
+          "ignoreBots": true
+        }
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1840,
+        -256
+      ],
+      "id": "wait-for-approval-emailer",
+      "name": "Wait for approval",
+      "webhookId": "wait-approval-emailer"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "approved-check-emailer",
+              "leftValue": "={{ $json.query.action }}",
+              "rightValue": "approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2272,
+        -256
+      ],
+      "id": "approved-check-emailer",
+      "name": "Approved?"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Organize Info').first().json.dealStage }}",
+                    "rightValue": "1090810628",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "route-cap"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "CAP"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Organize Info').first().json.dealStage }}",
+                    "rightValue": "266058587",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "route-sales"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Sales"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2720,
+        -352
+      ],
+      "id": "route-approved-emailer",
+      "name": "Route approved"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "[slack-channel-id]",
+          "mode": "list",
+          "cachedResultName": "sales-notifications"
+        },
+        "text": "=\u274c *Email rejected \u2014 no emails will be sent.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "thread_ts": {
+            "replyValues": {
+              "thread_ts": "={{ $('Slack: Approve email?').item.json.message.ts }}"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2496,
+        -160
+      ],
+      "id": "slack-rejected-emailer",
+      "name": "Slack: Rejected",
+      "webhookId": "rejected-emailer-slack",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "[slack-channel-id]",
+          "mode": "list",
+          "cachedResultName": "sales-notifications"
+        },
+        "text": "=\u2705 *Approved*, the following emails will be sent:\n\n\u2022 Review request email \u2192 {{ DateTime.now().weekday >= 5 ? DateTime.now().plus({ days: (8 - DateTime.now().weekday) }).set({ hour: 9, minute: 0 }).toFormat(\"ccc dd LLL, HH:mm\") : DateTime.now().plus({ days: 1 }).set({ hour: 9, minute: 0 }).toFormat(\"ccc dd LLL, HH:mm\") }} CET\n\u2022 Wrap-up call request \u2192 {{ DateTime.now().weekday >= 5 ? DateTime.now().plus({ days: (8 - DateTime.now().weekday) }).set({ hour: 10, minute: 0 }).toFormat(\"ccc dd LLL, HH:mm\") : DateTime.now().plus({ days: 1 }).set({ hour: 10, minute: 0 }).toFormat(\"ccc dd LLL, HH:mm\") }} CET",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "thread_ts": {
+            "replyValues": {
+              "thread_ts": "={{ $('Slack: Approve email?').item.json.message.ts }}"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2496,
+        -352
+      ],
+      "id": "slack-approved-emailer",
+      "name": "Slack: Approved",
+      "webhookId": "approved-emailer-slack",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "update",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Slack: Approve email?').item.json.channel }}",
+          "mode": "id"
+        },
+        "ts": "={{ $('Slack: Approve email?').item.json.message.ts }}",
+        "text": "=\u2709\ufe0f *{{ $json.cleanCompanyName }} auto emailed for review*\n\n*Engagement:* {{ $json.engagement }}\n*Stage:* {{ $json.dealStage === '1090810628' ? 'CAP Completed (Drata CAP)' : $json.dealStage === '266058587' ? 'Lead Closed (Sales)' : $json.dealStage }}\n*Primary contact:* {{ $json.primaryContact.firstName }} {{ $json.primaryContact.lastName }} ({{ $json.primaryContact.email }})\n\n<https://app.hubspot.com/contacts/[hubspot-portal-id]/record/0-3/{{ $json.dealId }}|View deal in HubSpot>",
+        "updateFields": {},
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        2048,
+        -256
+      ],
+      "id": "0806f3e3-08dd-4fdd-b55c-2098f158bedc",
+      "name": "Update a message",
+      "webhookId": "f92cbe7f-9e18-4c60-bf06-8f5a6d461e47",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "fRy0lrZHBkBNg7yw",
+          "name": "Foodamigos Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get a deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Which Stage?": {
+      "main": [
+        [
+          {
+            "node": "Proposal Signed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: Approve email?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: Approve email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a deal": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a contact": {
+      "main": [
+        [
+          {
+            "node": "Organize Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Get a contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Organize Info": {
+      "main": [
+        [
+          {
+            "node": "Which Stage?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap-Up Call Request CAP": {
+      "main": [
+        []
+      ]
+    },
+    "Wait until next business day 9 AM CET - Sales": {
+      "main": [
+        [
+          {
+            "node": "Is subscription?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Split Contacts - Sales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait until next business day 9 AM CET - CAP": {
+      "main": [
+        [
+          {
+            "node": "Split Contacts - CAP",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait 1h - CAP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 1h - Sales": {
+      "main": [
+        [
+          {
+            "node": "Wrap-Up Call Request Sales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Contacts - CAP": {
+      "main": [
+        [
+          {
+            "node": "Review Request CAP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Contacts - Sales": {
+      "main": [
+        [
+          {
+            "node": "Review Request Sales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is subscription?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Wait 1h - Sales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 1h - CAP": {
+      "main": [
+        [
+          {
+            "node": "Wrap-Up Call Request CAP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Approve email?": {
+      "main": [
+        [
+          {
+            "node": "Wait for approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for approval": {
+      "main": [
+        [
+          {
+            "node": "Update a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved?": {
+      "main": [
+        [
+          {
+            "node": "Slack: Approved",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route approved": {
+      "main": [
+        [
+          {
+            "node": "Wait until next business day 9 AM CET - CAP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait until next business day 9 AM CET - Sales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Approved": {
+      "main": [
+        [
+          {
+            "node": "Route approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a message": {
+      "main": [
+        [
+          {
+            "node": "Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "bfd60cca-0c5b-40ac-8c7e-17e59a6a3610",
+  "activeVersionId": "bfd60cca-0c5b-40ac-8c7e-17e59a6a3610",
+  "versionCounter": 569,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-23T14:40:12.449Z",
+      "createdAt": "2026-02-23T14:40:12.449Z",
+      "role": "workflow:owner",
+      "workflowId": "Yr2B0TP0DkF8mBWH",
+      "projectId": "1xouAt4QdWWhUWuM",
+      "project": {
+        "updatedAt": "2025-10-13T14:48:28.241Z",
+        "createdAt": "2025-10-13T14:47:21.362Z",
+        "id": "1xouAt4QdWWhUWuM",
+        "name": "Your Name <your-email@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-17T13:56:17.000Z",
+    "createdAt": "2026-03-17T13:56:07.284Z",
+    "versionId": "bfd60cca-0c5b-40ac-8c7e-17e59a6a3610",
+    "workflowId": "Yr2B0TP0DkF8mBWH",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "emailer",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          272,
+          -352
+        ],
+        "id": "a3ed26e7-3b77-4a37-ae3b-397f17561671",
+        "name": "Webhook",
+        "webhookId": "ca06e3be-d1de-42bb-94d1-62b5f4a4334c"
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "id": "b7496e04-c3dc-4ee9-930d-3703d6fae88d",
+                      "leftValue": "={{ ['266058586', '1297403657', '1211728151'].includes($json.dealStage) }}",
+                      "rightValue": "={{ ['266058586', '1297403657', '1211728151'].includes($json.body[0].propertyValue) }}",
+                      "operator": {
+                        "type": "boolean",
+                        "operation": "true",
+                        "singleValue": true
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "Proposal Signed (All)"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.dealStage }}",
+                      "rightValue": "1090810628",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "id": "b07c2d6d-c949-4310-bd20-9e1766a5b111"
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "CAP Completed (Drata CAP)"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "id": "b18c6909-8fe6-4d40-8334-e6e279838505",
+                      "leftValue": "={{ $json.dealStage }}",
+                      "rightValue": "266058587",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals",
+                        "name": "filter.operator.equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "Lead Closed (Sales)"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.4,
+        "position": [
+          1392,
+          -368
+        ],
+        "id": "47bde3bb-67df-4a9f-a21e-0c11be2afe8a",
+        "name": "Which Stage?"
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "deal",
+          "operation": "get",
+          "dealId": {
+            "__rl": true,
+            "value": "={{ $('Webhook').item.json.body[0].objectId }}",
+            "mode": "id"
+          },
+          "filters": {
+            "includePropertyVersions": false,
+            "propertiesCollection": {
+              "propertiesValues": {
+                "properties": [
+                  "dealname",
+                  "dealstage",
+                  "engagement"
+                ],
+                "propertyMode": "valueOnly"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          496,
+          -352
+        ],
+        "id": "00357e53-7638-472f-8c35-fc7ca2c2946a",
+        "name": "Get a deal",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "operation": "get",
+          "contactId": {
+            "__rl": true,
+            "value": "={{ $json.contact }}",
+            "mode": "id"
+          },
+          "additionalFields": {
+            "formSubmissionMode": "none",
+            "listMemberships": false,
+            "propertiesCollection": {
+              "propertiesValues": {
+                "properties": [
+                  "email",
+                  "firstname",
+                  "company"
+                ],
+                "propertyMode": "valueOnly"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          944,
+          -352
+        ],
+        "id": "5e5687ea-4099-48f5-ba2f-1a23cb7f9208",
+        "name": "Get a contact",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "associations.associatedVids",
+          "options": {
+            "destinationFieldName": "contact"
+          }
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          720,
+          -352
+        ],
+        "id": "daf58f99-455e-47f8-b07e-3c5489896dd5",
+        "name": "Split Out"
+      },
+      {
+        "parameters": {
+          "jsCode": "const contacts = $input.all().map(item => item.json);\n\nconst sorted = [...contacts].sort((a, b) =>\n  parseInt(a.properties.createdate.value) - parseInt(b.properties.createdate.value)\n);\n\nconst primaryContact = {\n  firstName: sorted[0].properties.firstname?.value || '',\n  lastName: sorted[0].properties.lastname?.value || '',\n  email: sorted[0].properties.email?.value || ''\n};\n\nconst teamContacts = sorted.slice(1).map(c => ({\n  firstName: c.properties.firstname?.value || '',\n  lastName: c.properties.lastname?.value || '',\n  email: c.properties.email?.value || ''\n}));\n\nconst allContacts = sorted.map(c => ({\n  firstName: c.properties.firstname?.value || '',\n  lastName: c.properties.lastname?.value || '',\n  email: c.properties.email?.value || ''\n}));\n\nconst companyName = sorted[0].properties.company?.value || '';\nconst dealName = $('Get a deal').first().json.properties.dealname?.value || '';\n\n// Clean company name: use companyName, fall back to dealName stripped of suffixes\nlet cleanCompanyName = companyName;\nif (!cleanCompanyName && dealName) {\n  cleanCompanyName = dealName\n    .replace(/\\s*-\\s*(Renewal|renewal).*$/, '')\n    .replace(/\\s+(Achievement Plan|Accelerator Plan|Assurance Plan|vCISO|MSSP).*$/, '')\n    .trim();\n}\nif (!cleanCompanyName) cleanCompanyName = dealName || 'Unknown';\nconst rawEngagement = ($('Get a deal').first().json.properties.engagement?.value || '').trim();\nconst dealStage = $('Get a deal').first().json.properties.dealstage.value;\nconst dealId = $('Webhook').first().json.body[0].objectId;\n\n// Pick single engagement + text\nlet engagement;\nlet engagementText;\nconst subscriptions = ['MSSP', 'Assurance Plan', 'vCISO'];\nconst parts = rawEngagement.split(';').map(p => p.trim()).filter(Boolean);\n\nif (!rawEngagement || rawEngagement === 'Accelerator Plan') {\n  engagement = rawEngagement || '';\n  engagementText = 'Our engagement was completed \ud83c\udf89';\n} else if (parts.includes('Achievement Plan')) {\n  engagement = 'Achievement Plan';\n  engagementText = 'Your Achievement Plan was completed \ud83c\udf89';\n} else {\n  const services = parts.filter(p => !subscriptions.includes(p));\n  const subs = parts.filter(p => subscriptions.includes(p));\n\n  if (services.length > 0) {\n    engagement = services[0];\n    engagementText = `Your ${services[0]} was completed \ud83c\udf89`;\n  } else if (subs.length > 0) {\n    const sub = subs[0];\n    engagement = sub;\n    if (sub === 'MSSP') {\n      engagementText = 'Your subscription just ended';\n    } else if (sub === 'Assurance Plan') {\n      engagementText = 'Your Assurance Plan just ended';\n    } else if (sub === 'vCISO') {\n      engagementText = 'Your vCISO just ended';\n    }\n  } else {\n    engagement = parts[0];\n    engagementText = `Your ${parts[0]} was completed \ud83c\udf89`;\n  }\n}\n\nreturn [{\n  json: {\n    primaryContact,\n    teamContacts,\n    allContacts,\n    companyName,\n    cleanCompanyName,\n    engagement,\n    engagementText,\n    dealStage,\n    dealId\n  }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1168,
+          -352
+        ],
+        "id": "5a786bee-b306-4bfb-a7d6-3d074144e531",
+        "name": "Organize Info"
+      },
+      {
+        "parameters": {
+          "toRecipients": "={{ $json.allContacts.map(c => c.email).join(',') }}",
+          "subject": "={{ $json.cleanCompanyName }} Onboarding at YourCompany",
+          "bodyContent": "=[YOUR-EMAIL-SIGNATURE-HTML]",
+          "additionalFields": {
+            "ccRecipients": "={{ $('Organize Info').item.json.teamContacts.length === 0 ? 'team@company.com' : [...$('Organize Info').item.json.teamContacts.map(c => c.email), 'team@company.com'].join(',') }}",
+            "bodyContentType": "html"
+          }
+        },
+        "type": "n8n-nodes-base.microsoftOutlook",
+        "typeVersion": 2,
+        "position": [
+          3392,
+          -448
+        ],
+        "id": "a0acda3c-2f1d-4088-b127-18d1b8d583ff",
+        "name": "Wrap-Up Call Request CAP",
+        "webhookId": "a433cb1e-6453-4068-931d-4cf96c75bc77",
+        "credentials": {
+          "microsoftOutlookOAuth2Api": {
+            "id": "azOFMTypy2ecR4Sk",
+            "name": "Your Name's Microsoft Outlook account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "toRecipients": "={{ $('Organize Info').item.json.primaryContact.email }}",
+          "subject": "=Book your Wrap-Up",
+          "bodyContent": "=Hi {{ $('Organize Info').item.json.primaryContact.firstName }},\n<br><br>\n{{ $('Organize Info').item.json.engagementText }} I'd love to get 15 minutes with you to walk through where you stand and what the road ahead looks like.\n<br><br>\nIn our wrap-up call we'll cover:<br>\n- Quick recap of your deliverables<br>\n- Your current GRC platform completion status and remaining milestones<br>\n- Overview of what it takes to get audit-ready or maintain your certification<br>\n- Your questions\n<br><br>\nNo homework, just show up.\n<br><br>\n\ud83d\udc49 <a href=\"https://meetings.hubspot.com/yourcompany-team/cap-wrap-up?company={{ $('Organize Info').item.json.cleanCompanyName }}\">Book your 15-minute Wrap-Up here</a>\n<br><br>\nGot questions before booking? Just reply to this email. I'm happy to help.\n<br><br>\nBest,\n<br><br>\n[YOUR-EMAIL-SIGNATURE-HTML]",
+          "additionalFields": {
+            "ccRecipients": "={{ $('Organize Info').item.json.teamContacts.length === 0 ? 'team@company.com' : [...$('Organize Info').item.json.teamContacts.map(c => c.email), 'team@company.com'].join(',') }}",
+            "bodyContentType": "html"
+          }
+        },
+        "type": "n8n-nodes-base.microsoftOutlook",
+        "typeVersion": 2,
+        "position": [
+          3616,
+          -256
+        ],
+        "id": "64c6c9d6-2e96-42f9-a19e-ce999e083d3a",
+        "name": "Wrap-Up Call Request Sales",
+        "webhookId": "a433cb1e-6453-4068-931d-4cf96c75bc77",
+        "credentials": {
+          "microsoftOutlookOAuth2Api": {
+            "id": "azOFMTypy2ecR4Sk",
+            "name": "Your Name's Microsoft Outlook account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "resume": "specificTime",
+          "dateTime": "={{ DateTime.now().plus({ days: DateTime.now().weekday >= 5 ? (8 -            \n  DateTime.now().weekday) : 1 }).set({ hour: 9, minute: 0, second: 0,          \n  millisecond: 0 }).toISO() }}"
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          2944,
+          -160
+        ],
+        "id": "dd07738a-91fb-4321-9bb7-89c73e0d759a",
+        "name": "Wait until next business day 9 AM CET - Sales",
+        "webhookId": "9cc1756c-7646-43db-99a6-cb4a1a06e6ea"
+      },
+      {
+        "parameters": {
+          "resume": "specificTime",
+          "dateTime": "={{ DateTime.now().plus({ days: DateTime.now().weekday >= 5 ? (8 -            \n  DateTime.now().weekday) : 1 }).set({ hour: 9, minute: 0, second: 0,          \n  millisecond: 0 }).toISO() }}"
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          2944,
+          -544
+        ],
+        "id": "e140f29a-416c-4d81-923b-5b319a535db1",
+        "name": "Wait until next business day 9 AM CET - CAP",
+        "webhookId": "9cc1756c-7646-43db-99a6-cb4a1a06e6ea"
+      },
+      {
+        "parameters": {
+          "amount": 1,
+          "unit": "hours"
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          3392,
+          -256
+        ],
+        "id": "fb5eb486-7f19-45d4-bf68-0454f37abb94",
+        "name": "Wait 1h - Sales",
+        "webhookId": "6981b9a7-e1bf-4177-b7e8-93674bc79233"
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "allContacts",
+          "include": "selectedOtherFields",
+          "fieldsToInclude": "companyName",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          3168,
+          -640
+        ],
+        "id": "8c09cda4-dfff-45c5-9f29-d47a4fdf765d",
+        "name": "Split Contacts - CAP"
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "allContacts",
+          "include": "selectedOtherFields",
+          "fieldsToInclude": "companyName",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          3168,
+          -64
+        ],
+        "id": "50c27b36-5014-4d57-bc8c-b1a502c3cf7a",
+        "name": "Split Contacts - Sales"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "c1307c36-94b5-4675-83de-f091929b5899",
+                "leftValue": "={{ $json.engagement }}",
+                "rightValue": "MSSP",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              },
+              {
+                "id": "4e0ca266-b4b3-4926-bdf6-a2c522feec38",
+                "leftValue": "={{ $json.engagement }}",
+                "rightValue": "vCISO",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals",
+                  "name": "filter.operator.equals"
+                }
+              },
+              {
+                "id": "81e0ef32-a962-4efa-9494-c8f73f5fae73",
+                "leftValue": "={{ $json.engagement }}",
+                "rightValue": "Assurance Plan",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals",
+                  "name": "filter.operator.equals"
+                }
+              }
+            ],
+            "combinator": "or"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          3168,
+          -256
+        ],
+        "id": "b921da16-43b8-4219-a3c8-718bbe9c47a2",
+        "name": "Is subscription?"
+      },
+      {
+        "parameters": {
+          "amount": 1,
+          "unit": "hours"
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          3168,
+          -448
+        ],
+        "id": "0f8eb5d2-ce99-404d-a41f-be7e0035ee25",
+        "name": "Wait 1h - CAP",
+        "webhookId": "6981b9a7-e1bf-4177-b7e8-93674bc79233"
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "[slack-channel-id]",
+            "mode": "list",
+            "cachedResultName": "sales-notifications"
+          },
+          "text": "=\u2709\ufe0f *Auto email {{ $json.cleanCompanyName }} for review*\n\n*Engagement:* {{ $json.engagement }}\n*Stage:* {{ $json.dealStage === '1090810628' ? 'CAP Completed (Drata CAP)' : $json.dealStage === '266058587' ? 'Lead Closed (Sales)' : $json.dealStage }}\n*Primary contact:* {{ $json.primaryContact.firstName }} {{ $json.primaryContact.lastName }} ({{ $json.primaryContact.email }})\n*All contacts:* {{ $json.allContacts.map(c => c.firstName + ' ' + c.lastName + ' <' + c.email + '>').join(', ') }}\n\n<https://app.hubspot.com/contacts/[hubspot-portal-id]/record/0-3/{{ $json.dealId }}|View deal in HubSpot>\n\n<{{ $execution.resumeUrl }}?action=approve|\u2705 Approve & Send>  |  <{{ $execution.resumeUrl }}?action=reject|\u274c Reject>",
+          "otherOptions": {
+            "includeLinkToWorkflow": false
+          }
+        },
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          1616,
+          -256
+        ],
+        "id": "slack-approve-email",
+        "name": "Slack: Approve email?",
+        "webhookId": "approve-emailer-slack",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "resume": "webhook",
+          "options": {
+            "ignoreBots": true
+          }
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          1840,
+          -256
+        ],
+        "id": "wait-for-approval-emailer",
+        "name": "Wait for approval",
+        "webhookId": "wait-approval-emailer"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "approved-check-emailer",
+                "leftValue": "={{ $json.query.action }}",
+                "rightValue": "approve",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          2272,
+          -256
+        ],
+        "id": "approved-check-emailer",
+        "name": "Approved?"
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $('Organize Info').first().json.dealStage }}",
+                      "rightValue": "1090810628",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "id": "route-cap"
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "CAP"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $('Organize Info').first().json.dealStage }}",
+                      "rightValue": "266058587",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "id": "route-sales"
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "Sales"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.4,
+        "position": [
+          2720,
+          -352
+        ],
+        "id": "route-approved-emailer",
+        "name": "Route approved"
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "[slack-channel-id]",
+            "mode": "list",
+            "cachedResultName": "sales-notifications"
+          },
+          "text": "=\u274c *Email rejected \u2014 no emails will be sent.",
+          "otherOptions": {
+            "includeLinkToWorkflow": false,
+            "thread_ts": {
+              "replyValues": {
+                "thread_ts": "={{ $('Slack: Approve email?').item.json.message.ts }}"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          2496,
+          -160
+        ],
+        "id": "slack-rejected-emailer",
+        "name": "Slack: Rejected",
+        "webhookId": "rejected-emailer-slack",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "select": "channel",
+          "channelId": {
+            "__rl": true,
+            "value": "[slack-channel-id]",
+            "mode": "list",
+            "cachedResultName": "sales-notifications"
+          },
+          "text": "=\u2705 *Approved*, the following emails will be sent:\n\n\u2022 Review request email \u2192 {{ DateTime.now().weekday >= 5 ? DateTime.now().plus({ days: (8 - DateTime.now().weekday) }).set({ hour: 9, minute: 0 }).toFormat(\"ccc dd LLL, HH:mm\") : DateTime.now().plus({ days: 1 }).set({ hour: 9, minute: 0 }).toFormat(\"ccc dd LLL, HH:mm\") }} CET\n\u2022 Wrap-up call request \u2192 {{ DateTime.now().weekday >= 5 ? DateTime.now().plus({ days: (8 - DateTime.now().weekday) }).set({ hour: 10, minute: 0 }).toFormat(\"ccc dd LLL, HH:mm\") : DateTime.now().plus({ days: 1 }).set({ hour: 10, minute: 0 }).toFormat(\"ccc dd LLL, HH:mm\") }} CET",
+          "otherOptions": {
+            "includeLinkToWorkflow": false,
+            "thread_ts": {
+              "replyValues": {
+                "thread_ts": "={{ $('Slack: Approve email?').item.json.message.ts }}"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.3,
+        "position": [
+          2496,
+          -352
+        ],
+        "id": "slack-approved-emailer",
+        "name": "Slack: Approved",
+        "webhookId": "approved-emailer-slack",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "oAuth2",
+          "operation": "update",
+          "channelId": {
+            "__rl": true,
+            "value": "={{ $('Slack: Approve email?').item.json.channel }}",
+            "mode": "id"
+          },
+          "ts": "={{ $('Slack: Approve email?').item.json.message.ts }}",
+          "text": "=\u2709\ufe0f *{{ $json.cleanCompanyName }} auto emailed for review*\n\n*Engagement:* {{ $json.engagement }}\n*Stage:* {{ $json.dealStage === '1090810628' ? 'CAP Completed (Drata CAP)' : $json.dealStage === '266058587' ? 'Lead Closed (Sales)' : $json.dealStage }}\n*Primary contact:* {{ $json.primaryContact.firstName }} {{ $json.primaryContact.lastName }} ({{ $json.primaryContact.email }})\n\n<https://app.hubspot.com/contacts/[hubspot-portal-id]/record/0-3/{{ $json.dealId }}|View deal in HubSpot>",
+          "updateFields": {},
+          "otherOptions": {}
+        },
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.4,
+        "position": [
+          2048,
+          -256
+        ],
+        "id": "0806f3e3-08dd-4fdd-b55c-2098f158bedc",
+        "name": "Update a message",
+        "webhookId": "f92cbe7f-9e18-4c60-bf06-8f5a6d461e47",
+        "credentials": {
+          "slackOAuth2Api": {
+            "id": "fRy0lrZHBkBNg7yw",
+            "name": "Foodamigos Slack account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Get a deal",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Which Stage?": {
+        "main": [
+          [
+            {
+              "node": "Proposal Signed",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Slack: Approve email?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Slack: Approve email?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get a deal": {
+        "main": [
+          [
+            {
+              "node": "Split Out",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get a contact": {
+        "main": [
+          [
+            {
+              "node": "Organize Info",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Out": {
+        "main": [
+          [
+            {
+              "node": "Get a contact",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Organize Info": {
+        "main": [
+          [
+            {
+              "node": "Which Stage?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wrap-Up Call Request CAP": {
+        "main": [
+          []
+        ]
+      },
+      "Wait until next business day 9 AM CET - Sales": {
+        "main": [
+          [
+            {
+              "node": "Is subscription?",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Split Contacts - Sales",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait until next business day 9 AM CET - CAP": {
+        "main": [
+          [
+            {
+              "node": "Split Contacts - CAP",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Wait 1h - CAP",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait 1h - Sales": {
+        "main": [
+          [
+            {
+              "node": "Wrap-Up Call Request Sales",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Contacts - CAP": {
+        "main": [
+          [
+            {
+              "node": "Review Request CAP",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Contacts - Sales": {
+        "main": [
+          [
+            {
+              "node": "Review Request Sales",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is subscription?": {
+        "main": [
+          [],
+          [
+            {
+              "node": "Wait 1h - Sales",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait 1h - CAP": {
+        "main": [
+          [
+            {
+              "node": "Wrap-Up Call Request CAP",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Slack: Approve email?": {
+        "main": [
+          [
+            {
+              "node": "Wait for approval",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait for approval": {
+        "main": [
+          [
+            {
+              "node": "Update a message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Approved?": {
+        "main": [
+          [
+            {
+              "node": "Slack: Approved",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Slack: Rejected",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Route approved": {
+        "main": [
+          [
+            {
+              "node": "Wait until next business day 9 AM CET - CAP",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Wait until next business day 9 AM CET - Sales",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Slack: Approved": {
+        "main": [
+          [
+            {
+              "node": "Route approved",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update a message": {
+        "main": [
+          [
+            {
+              "node": "Approved?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Your Name",
+    "name": "added approval layer",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-17T13:56:17.717Z",
+        "id": 263,
+        "workflowId": "Yr2B0TP0DkF8mBWH",
+        "versionId": "bfd60cca-0c5b-40ac-8c7e-17e59a6a3610",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    ]
+  }
+}

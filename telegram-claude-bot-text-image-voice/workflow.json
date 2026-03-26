@@ -1,0 +1,5231 @@
+{
+  "updatedAt": "2026-02-26T08:45:57.150Z",
+  "createdAt": "2026-02-20T13:41:33.845Z",
+  "id": "Fq6xyoiSzqPGDVqK",
+  "name": "Telegram Claude Bot (Text + Image + Voice)",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "node-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        400
+      ],
+      "webhookId": "65f501de-3c14-4089-9b9d-8956676bebf3",
+      "credentials": {
+        "telegramApi": {
+          "id": "A5mb1Ts6wYCACmrr",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "combinator": "and",
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "array",
+                      "operation": "contains",
+                      "rightType": "any"
+                    },
+                    "leftValue": "={{ $json.message.keys() }}",
+                    "rightValue": "text"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "array",
+                      "operation": "contains",
+                      "rightType": "any"
+                    },
+                    "leftValue": "={{ $json.message.keys() }}",
+                    "rightValue": "voice"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Voice"
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "options": {
+                  "version": 2,
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "array",
+                      "operation": "contains",
+                      "rightType": "any"
+                    },
+                    "leftValue": "={{ $json.message.keys() }}",
+                    "rightValue": "photo"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "node-switch",
+      "name": "Verify Message Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        240,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "userMessage",
+              "type": "string",
+              "value": "={{ $json.message.text }}"
+            },
+            {
+              "id": "a2",
+              "name": "chatId",
+              "type": "string",
+              "value": "={{ $json.message.chat.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-set-text",
+      "name": "Set Text",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": false,
+            "typeValidation": "strict",
+            "rightValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              },
+              "leftValue": "={{ $json.userMessage }}",
+              "rightValue": "log ",
+              "id": "condition-1772026938596-4jsg6muf0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-is-food-log",
+      "name": "Is Food Log?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "options": {}
+      },
+      "id": "node-read-memory-food",
+      "name": "Read Memory Food",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        928,
+        -96
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const memoryRows = $('Read Memory Food').all().map(i => i.json);\nconst userMessage = $('Set Text').item.json.userMessage;\nconst chatId = $('Set Text').item.json.chatId;\n\nconst sorted = memoryRows\n  .filter(r => r.timestamp)\n  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))\n  .slice(0, 10)\n  .reverse();\n\nconst messages = sorted.map(r => ({\n  role: r.role || 'user',\n  content: String(r.content || '')\n}));\n\nmessages.push({ role: 'user', content: userMessage });\n\nreturn [{ json: { messages, userMessage, chatId } }];"
+      },
+      "id": "node-build-msgs-food",
+      "name": "Build Messages Food",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (function() {\n  const msgs = $json.messages.map(m => JSON.stringify(m)).join(',');\n  return '{\"model\": \"claude-sonnet-4-6\", \"max_tokens\": 2048, \"system\": \"You are a nutrition tracking assistant for Your Name. Your job is to parse food log messages and calculate nutritional information.\\n\\nToday's date: {{ new Date().toISOString().split('T')[0] }}\\n\\n## Instructions\\n- Parse the food items from the user's message\\n- The format is usually: \\\"log meal_type: weight item, weight item, ...\\\" but be flexible\\n- If meal_type is not specified, infer from the time or default to \\\"snack\\\"\\n- Calculate calories, protein, carbs, fat per item using USDA nutritional data per 100g\\n- Use chat history for context (e.g. \\\"same as yesterday\\\", \\\"also add 100g broccoli\\\")\\n- For image-based food logs: read nutrition labels, identify foods, estimate portions\\n\\n## Response format\\nReturn ONLY valid JSON, no markdown, no backticks:\\n{\\n  \\\"meal_type\\\": \\\"lunch\\\",\\n  \\\"items\\\": [\\n    {\\\"item\\\": \\\"chicken breast\\\", \\\"weight_g\\\": 200, \\\"calories\\\": 330, \\\"protein_g\\\": 62, \\\"carbs_g\\\": 0, \\\"fat_g\\\": 7.2}\\n  ],\\n  \\\"summary\\\": \\\"Lunch logged \\u2014 530 cal | P: 67g | C: 38g | F: 9g\\\"\\n}\", \"messages\": [' + msgs + ']}';\n})() }}",
+        "options": {}
+      },
+      "id": "node-claude-food",
+      "name": "Claude Food Parse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1360,
+        -96
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YftLcLuY7oj1yCrv",
+          "name": "Header Auth account"
+        },
+        "anthropicApi": {
+          "id": "ZDET7VGt2ObFDWsT",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const responseText = $json.content[0].text;\nlet parsed;\ntry {\n  const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n  parsed = JSON.parse(jsonMatch ? jsonMatch[0] : responseText);\n} catch(e) {\n  parsed = { meal_type: 'unknown', items: [], summary: 'Failed to parse food data: ' + responseText.substring(0, 200) };\n}\n\nconst today = new Date().toISOString().split('T')[0];\n\nconst items = (parsed.items || []).map(item => ({\n  json: {\n    date: today,\n    meal_type: parsed.meal_type || 'snack',\n    item: item.item,\n    weight_g: item.weight_g || 0,\n    calories: item.calories || 0,\n    protein_g: item.protein_g || 0,\n    carbs_g: item.carbs_g || 0,\n    fat_g: item.fat_g || 0,\n    source: 'telegram'\n  }\n}));\n\nif (items.length === 0) {\n  items.push({ json: { date: today, meal_type: 'unknown', item: 'parse_error', weight_g: 0, calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, source: 'telegram' } });\n}\n\nitems[0].json._summary = parsed.summary || 'Food logged';\nitems[0].json._fullResponse = responseText;\n\nreturn items;"
+      },
+      "id": "node-parse-food",
+      "name": "Parse Food Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "meals"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "schemaType": "manual",
+            "values": [
+              {
+                "id": "tf1",
+                "name": "date",
+                "type": "stringValue",
+                "value": "={{ $json.date }}"
+              },
+              {
+                "id": "tf2",
+                "name": "meal_type",
+                "type": "stringValue",
+                "value": "={{ $json.meal_type }}"
+              },
+              {
+                "id": "tf3",
+                "name": "item",
+                "type": "stringValue",
+                "value": "={{ $json.item }}"
+              },
+              {
+                "id": "tf4",
+                "name": "weight_g",
+                "type": "numberValue",
+                "value": "={{ $json.weight_g }}"
+              },
+              {
+                "id": "tf5",
+                "name": "calories",
+                "type": "numberValue",
+                "value": "={{ $json.calories }}"
+              },
+              {
+                "id": "tf6",
+                "name": "protein_g",
+                "type": "numberValue",
+                "value": "={{ $json.protein_g }}"
+              },
+              {
+                "id": "tf7",
+                "name": "carbs_g",
+                "type": "numberValue",
+                "value": "={{ $json.carbs_g }}"
+              },
+              {
+                "id": "tf8",
+                "name": "fat_g",
+                "type": "numberValue",
+                "value": "={{ $json.fat_g }}"
+              },
+              {
+                "id": "tf9",
+                "name": "source",
+                "type": "stringValue",
+                "value": "={{ $json.source }}"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "id": "node-write-food",
+      "name": "Write Food Items",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1808,
+        -96
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "schemaType": "manual",
+            "values": [
+              {
+                "id": "fu1",
+                "name": "timestamp",
+                "type": "stringValue",
+                "value": "={{ new Date().toISOString() }}"
+              },
+              {
+                "id": "fu2",
+                "name": "chat_id",
+                "type": "stringValue",
+                "value": "={{ $('Set Text').item.json.chatId }}"
+              },
+              {
+                "id": "fu3",
+                "name": "role",
+                "type": "stringValue",
+                "value": "user"
+              },
+              {
+                "id": "fu4",
+                "name": "content",
+                "type": "stringValue",
+                "value": "={{ $('Set Text').item.json.userMessage }}"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "id": "node-save-food-user",
+      "name": "Save Food User Msg",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2032,
+        -96
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "schemaType": "manual",
+            "values": [
+              {
+                "id": "fa1",
+                "name": "timestamp",
+                "type": "stringValue",
+                "value": "={{ new Date().toISOString() }}"
+              },
+              {
+                "id": "fa2",
+                "name": "chat_id",
+                "type": "stringValue",
+                "value": "={{ $('Set Text').item.json.chatId }}"
+              },
+              {
+                "id": "fa3",
+                "name": "role",
+                "type": "stringValue",
+                "value": "assistant"
+              },
+              {
+                "id": "fa4",
+                "name": "content",
+                "type": "stringValue",
+                "value": "={{ $('Parse Food Response').first().json._summary }}"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "id": "node-save-food-asst",
+      "name": "Save Food Asst Msg",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2240,
+        -96
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Set Text').item.json.chatId }}",
+        "text": "={{ $('Parse Food Response').first().json._summary }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "node-reply-food",
+      "name": "Reply Food",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2464,
+        -96
+      ],
+      "webhookId": "849ce50a-1729-4268-8e5f-bd5937325f53",
+      "credentials": {
+        "telegramApi": {
+          "id": "A5mb1Ts6wYCACmrr",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "options": {}
+      },
+      "id": "node-read-memory-text",
+      "name": "Read Memory Text",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        928,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const memoryRows = $('Read Memory Text').all().map(i => i.json);\nconst userMessage = $('Set Text').item.json.userMessage;\nconst chatId = $('Set Text').item.json.chatId;\n\nconst sorted = memoryRows\n  .filter(r => r.timestamp)\n  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))\n  .slice(0, 10)\n  .reverse();\n\nconst messages = sorted.map(r => ({\n  role: r.role || 'user',\n  content: String(r.content || '')\n}));\n\nmessages.push({ role: 'user', content: userMessage });\n\nreturn [{ json: { messages, userMessage, chatId } }];"
+      },
+      "id": "node-build-msgs-text",
+      "name": "Build Messages Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (function() {\n  const msgs = $json.messages.map(m => JSON.stringify(m)).join(',');\n  return '{\"model\": \"claude-sonnet-4-6\", \"max_tokens\": 2048, \"system\": \"You are Your Name's personal AI assistant \\u2014 her second brain \\u2014 available on Telegram.\\n\\nToday's date: {{ new Date().toISOString().split('T')[0] }}\\n\\n## Who Your Name is\\nBrazilian, 33, based in Berlin. Married Kay (German, BKA officer transitioning to diplomatic liaison starting Jan 2028) in December 2025 in Denmark. Economics background. ExxonMobil, Bosch alumni. 10+ years GTM ops and RevOps.\\n\\n## Current work\\n\\n### YourCompany (16h/week, \\u20ac2,500/month)\\nHead of CS / Sales. Cybersecurity compliance consulting, Drata partner. Built ~90% automated sales system: AI email responses, Qwilr proposals, follow-up sequences. 4x free-to-paid conversion. Tech: HubSpot (team@company.com), Microsoft 365, n8n.\\n\\n### FoodAmigos (fractional COO, \\u20ac75-100+/hr)\\nGerman restaurant SaaS. 70K+ monthly leads (UberEats, Lieferando, Wolt). Pipeline: merge, exclusion, normalize, dedup. LLM lead scoring. HubSpot SDR task automation (5 SMs, 70 tasks/day). Tech: Python, n8n, HubSpot, Docker on DigitalOcean Frankfurt.\\n\\n## Tech stack\\nn8n, HubSpot, Python, JS, Google Sheets, DigitalOcean, Microsoft 365, Slack, Qwilr, Xero, DocuSeal, Anthropic Claude API\\n\\n## Career direction\\nLive n8n automation workshops for technical professionals. Target: \\u20ac15-20K/month in 3 years.\\n\\n## Personal\\n- Kay Steinberg: BKA, A10 April 2026, liaison pool Feb 2026, diplomatic posting 2028\\n- Languages: Portuguese (native), English (fluent), German (functional), Spanish (functional)\\n- Interests: cooking, running 10km/week, travel (60+ countries), mystery/thriller books\\n\\n## How to respond\\n- Direct, no fluff, casual tone, match her energy\\n- Always complete solutions, never partial snippets\\n- Same language she writes in (English or Portuguese)\\n- If venting, help think through it practically\\n- Honesty over being spared the reality\", \"messages\": [' + msgs + ']}';\n})() }}",
+        "options": {}
+      },
+      "id": "node-claude-text",
+      "name": "Claude Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1360,
+        304
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YftLcLuY7oj1yCrv",
+          "name": "Header Auth account"
+        },
+        "anthropicApi": {
+          "id": "ZDET7VGt2ObFDWsT",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "schemaType": "manual",
+            "values": [
+              {
+                "id": "su1",
+                "name": "timestamp",
+                "type": "stringValue",
+                "value": "={{ new Date().toISOString() }}"
+              },
+              {
+                "id": "su2",
+                "name": "chat_id",
+                "type": "stringValue",
+                "value": "={{ $('Set Text').item.json.chatId }}"
+              },
+              {
+                "id": "su3",
+                "name": "role",
+                "type": "stringValue",
+                "value": "user"
+              },
+              {
+                "id": "su4",
+                "name": "content",
+                "type": "stringValue",
+                "value": "={{ $('Set Text').item.json.userMessage }}"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "id": "node-save-user-text",
+      "name": "Save User Msg Text",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1584,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "schemaType": "manual",
+            "values": [
+              {
+                "id": "sa1",
+                "name": "timestamp",
+                "type": "stringValue",
+                "value": "={{ new Date().toISOString() }}"
+              },
+              {
+                "id": "sa2",
+                "name": "chat_id",
+                "type": "stringValue",
+                "value": "={{ $('Set Text').item.json.chatId }}"
+              },
+              {
+                "id": "sa3",
+                "name": "role",
+                "type": "stringValue",
+                "value": "assistant"
+              },
+              {
+                "id": "sa4",
+                "name": "content",
+                "type": "stringValue",
+                "value": "={{ $('Claude Text').item.json.content[0].text }}"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "id": "node-save-asst-text",
+      "name": "Save Asst Msg Text",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1808,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Set Text').item.json.chatId }}",
+        "text": "={{ $('Claude Text').item.json.content[0].text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "node-reply-text",
+      "name": "Reply Text",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2032,
+        304
+      ],
+      "webhookId": "266d1311-b62b-4bc3-92e4-98cdb4d2fd90",
+      "credentials": {
+        "telegramApi": {
+          "id": "A5mb1Ts6wYCACmrr",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "id": "node-get-voice",
+      "name": "Get Voice File",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        608
+      ],
+      "webhookId": "78ee6c30-4e5f-4fbc-9b78-f3870abe8bb6",
+      "credentials": {
+        "telegramApi": {
+          "id": "A5mb1Ts6wYCACmrr",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "translate",
+        "options": {}
+      },
+      "id": "node-transcribe",
+      "name": "Whisper Transcribe",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        704,
+        608
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "d03HNhtWh3tV5wdT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1",
+              "name": "userMessage",
+              "type": "string",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "id": "b2",
+              "name": "chatId",
+              "type": "string",
+              "value": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-set-voice",
+      "name": "Set Voice Text",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        928,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "options": {}
+      },
+      "id": "node-read-memory-voice",
+      "name": "Read Memory Voice",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1152,
+        608
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const memoryRows = $('Read Memory Voice').all().map(i => i.json);\nconst userMessage = $('Set Voice Text').item.json.userMessage;\nconst chatId = $('Set Voice Text').item.json.chatId;\n\nconst sorted = memoryRows\n  .filter(r => r.timestamp)\n  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))\n  .slice(0, 10)\n  .reverse();\n\nconst messages = sorted.map(r => ({\n  role: r.role || 'user',\n  content: String(r.content || '')\n}));\n\nmessages.push({ role: 'user', content: userMessage });\n\nreturn [{ json: { messages, userMessage, chatId } }];"
+      },
+      "id": "node-build-msgs-voice",
+      "name": "Build Messages Voice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (function() {\n  const msgs = $json.messages.map(m => JSON.stringify(m)).join(',');\n  return '{\"model\": \"claude-sonnet-4-6\", \"max_tokens\": 2048, \"system\": \"You are Your Name's personal AI assistant \\u2014 her second brain \\u2014 available on Telegram.\\n\\nToday's date: {{ new Date().toISOString().split('T')[0] }}\\n\\n## Who Your Name is\\nBrazilian, 33, based in Berlin. Married Kay (German, BKA officer transitioning to diplomatic liaison starting Jan 2028) in December 2025 in Denmark. Economics background. ExxonMobil, Bosch alumni. 10+ years GTM ops and RevOps.\\n\\n## Current work\\n\\n### YourCompany (16h/week, \\u20ac2,500/month)\\nHead of CS / Sales. Cybersecurity compliance consulting, Drata partner. Built ~90% automated sales system: AI email responses, Qwilr proposals, follow-up sequences. 4x free-to-paid conversion. Tech: HubSpot (team@company.com), Microsoft 365, n8n.\\n\\n### FoodAmigos (fractional COO, \\u20ac75-100+/hr)\\nGerman restaurant SaaS. 70K+ monthly leads (UberEats, Lieferando, Wolt). Pipeline: merge, exclusion, normalize, dedup. LLM lead scoring. HubSpot SDR task automation (5 SMs, 70 tasks/day). Tech: Python, n8n, HubSpot, Docker on DigitalOcean Frankfurt.\\n\\n## Tech stack\\nn8n, HubSpot, Python, JS, Google Sheets, DigitalOcean, Microsoft 365, Slack, Qwilr, Xero, DocuSeal, Anthropic Claude API\\n\\n## Career direction\\nLive n8n automation workshops for technical professionals. Target: \\u20ac15-20K/month in 3 years.\\n\\n## Personal\\n- Kay Steinberg: BKA, A10 April 2026, liaison pool Feb 2026, diplomatic posting 2028\\n- Languages: Portuguese (native), English (fluent), German (functional), Spanish (functional)\\n- Interests: cooking, running 10km/week, travel (60+ countries), mystery/thriller books\\n\\n## How to respond\\n- Direct, no fluff, casual tone, match her energy\\n- Always complete solutions, never partial snippets\\n- Same language she writes in (English or Portuguese)\\n- If venting, help think through it practically\\n- Honesty over being spared the reality\", \"messages\": [' + msgs + ']}';\n})() }}",
+        "options": {}
+      },
+      "id": "node-claude-voice",
+      "name": "Claude Voice",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1584,
+        608
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YftLcLuY7oj1yCrv",
+          "name": "Header Auth account"
+        },
+        "anthropicApi": {
+          "id": "ZDET7VGt2ObFDWsT",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "schemaType": "manual",
+            "values": [
+              {
+                "id": "vu1",
+                "name": "timestamp",
+                "type": "stringValue",
+                "value": "={{ new Date().toISOString() }}"
+              },
+              {
+                "id": "vu2",
+                "name": "chat_id",
+                "type": "stringValue",
+                "value": "={{ $('Set Voice Text').item.json.chatId }}"
+              },
+              {
+                "id": "vu3",
+                "name": "role",
+                "type": "stringValue",
+                "value": "user"
+              },
+              {
+                "id": "vu4",
+                "name": "content",
+                "type": "stringValue",
+                "value": "={{ $('Set Voice Text').item.json.userMessage }}"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "id": "node-save-user-voice",
+      "name": "Save User Msg Voice",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1808,
+        608
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "schemaType": "manual",
+            "values": [
+              {
+                "id": "va1",
+                "name": "timestamp",
+                "type": "stringValue",
+                "value": "={{ new Date().toISOString() }}"
+              },
+              {
+                "id": "va2",
+                "name": "chat_id",
+                "type": "stringValue",
+                "value": "={{ $('Set Voice Text').item.json.chatId }}"
+              },
+              {
+                "id": "va3",
+                "name": "role",
+                "type": "stringValue",
+                "value": "assistant"
+              },
+              {
+                "id": "va4",
+                "name": "content",
+                "type": "stringValue",
+                "value": "={{ $('Claude Voice').item.json.content[0].text }}"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "id": "node-save-asst-voice",
+      "name": "Save Asst Msg Voice",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2032,
+        608
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Set Voice Text').item.json.chatId }}",
+        "text": "={{ $('Claude Voice').item.json.content[0].text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "node-reply-voice",
+      "name": "Reply Voice",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2240,
+        608
+      ],
+      "webhookId": "7a9b3009-325c-4366-9170-9469501da100",
+      "credentials": {
+        "telegramApi": {
+          "id": "A5mb1Ts6wYCACmrr",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo.last().file_id }}",
+        "additionalFields": {}
+      },
+      "id": "node-get-image",
+      "name": "Get Image File",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        912
+      ],
+      "webhookId": "deb8b218-e05c-4d6e-8671-1467aa1e5019",
+      "credentials": {
+        "telegramApi": {
+          "id": "A5mb1Ts6wYCACmrr",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst imageBase64 = item.binary?.data?.data || '';\nconst mimeType = item.binary?.data?.mimeType || 'image/jpeg';\nconst caption = $('Telegram Trigger').item.json.message?.caption || 'What is in this image?';\nconst chatId = $('Telegram Trigger').item.json.message.chat.id;\nreturn [{ json: { chatId, userMessage: caption, imageBase64, imageMimeType: mimeType } }];"
+      },
+      "id": "node-prep-image",
+      "name": "Prepare Image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        912
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": false,
+            "typeValidation": "strict",
+            "rightValue": ""
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+              "rightValue": "log",
+              "id": "condition-1772026938595-yeqx4z1q8"
+            },
+            {
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+              "rightValue": "breakfast",
+              "id": "condition-1772026938595-dvwnmmdr3"
+            },
+            {
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+              "rightValue": "lunch",
+              "id": "condition-1772026938595-sebpfq0tv"
+            },
+            {
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+              "rightValue": "dinner",
+              "id": "condition-1772026938595-ldgv01iue"
+            },
+            {
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+              "rightValue": "snack",
+              "id": "condition-1772026938595-3bhiwxiye"
+            },
+            {
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+              "rightValue": "meal",
+              "id": "condition-1772026938595-4bhwma9ns"
+            },
+            {
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+              "rightValue": "caf\u00e9",
+              "id": "condition-1772026938595-zc7o7wd2z"
+            },
+            {
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+              "rightValue": "almo\u00e7o",
+              "id": "condition-1772026938595-h7585abv0"
+            },
+            {
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+              "rightValue": "janta",
+              "id": "condition-1772026938595-2oyznsgh1"
+            },
+            {
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+              "rightValue": "lanche",
+              "id": "condition-1772026938596-w8ce0mvtr"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-is-food-photo",
+      "name": "Is Food Photo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        928,
+        912
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "options": {}
+      },
+      "id": "node-read-memory-img-food",
+      "name": "Read Memory Img Food",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1152,
+        800
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const memoryRows = $('Read Memory Img Food').all().map(i => i.json);\nconst userMessage = $('Prepare Image').item.json.userMessage;\nconst chatId = $('Prepare Image').item.json.chatId;\n\nconst sorted = memoryRows\n  .filter(r => r.timestamp)\n  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))\n  .slice(0, 10)\n  .reverse();\n\nconst messages = sorted.map(r => ({\n  role: r.role || 'user',\n  content: String(r.content || '')\n}));\n\nmessages.push({\n  role: 'user',\n  content: [\n    { type: 'image', source: { type: 'base64', media_type: $('Prepare Image').item.json.imageMimeType, data: $('Prepare Image').item.json.imageBase64 } },\n    { type: 'text', text: userMessage }\n  ]\n});\n\nreturn [{ json: { messages, userMessage, chatId, imageBase64: $('Prepare Image').item.json.imageBase64, imageMimeType: $('Prepare Image').item.json.imageMimeType } }];"
+      },
+      "id": "node-build-msgs-img-food",
+      "name": "Build Msgs Img Food",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=",
+        "options": {}
+      },
+      "id": "node-claude-img-food",
+      "name": "Claude Image Food",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1584,
+        800
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YftLcLuY7oj1yCrv",
+          "name": "Header Auth account"
+        },
+        "anthropicApi": {
+          "id": "ZDET7VGt2ObFDWsT",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const responseText = $json.content[0].text;\nlet parsed;\ntry {\n  const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n  parsed = JSON.parse(jsonMatch ? jsonMatch[0] : responseText);\n} catch(e) {\n  parsed = { meal_type: 'unknown', items: [], summary: 'Failed to parse food data: ' + responseText.substring(0, 200) };\n}\n\nconst today = new Date().toISOString().split('T')[0];\n\nconst items = (parsed.items || []).map(item => ({\n  json: {\n    date: today,\n    meal_type: parsed.meal_type || 'snack',\n    item: item.item,\n    weight_g: item.weight_g || 0,\n    calories: item.calories || 0,\n    protein_g: item.protein_g || 0,\n    carbs_g: item.carbs_g || 0,\n    fat_g: item.fat_g || 0,\n    source: 'telegram'\n  }\n}));\n\nif (items.length === 0) {\n  items.push({ json: { date: today, meal_type: 'unknown', item: 'parse_error', weight_g: 0, calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, source: 'telegram' } });\n}\n\nitems[0].json._summary = parsed.summary || 'Food logged';\nitems[0].json._fullResponse = responseText;\n\nreturn items;"
+      },
+      "id": "node-parse-img-food",
+      "name": "Parse Img Food Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1808,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "meals"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "schemaType": "manual",
+            "values": [
+              {
+                "id": "imf1",
+                "name": "date",
+                "type": "stringValue",
+                "value": "={{ $json.date }}"
+              },
+              {
+                "id": "imf2",
+                "name": "meal_type",
+                "type": "stringValue",
+                "value": "={{ $json.meal_type }}"
+              },
+              {
+                "id": "imf3",
+                "name": "item",
+                "type": "stringValue",
+                "value": "={{ $json.item }}"
+              },
+              {
+                "id": "imf4",
+                "name": "weight_g",
+                "type": "numberValue",
+                "value": "={{ $json.weight_g }}"
+              },
+              {
+                "id": "imf5",
+                "name": "calories",
+                "type": "numberValue",
+                "value": "={{ $json.calories }}"
+              },
+              {
+                "id": "imf6",
+                "name": "protein_g",
+                "type": "numberValue",
+                "value": "={{ $json.protein_g }}"
+              },
+              {
+                "id": "imf7",
+                "name": "carbs_g",
+                "type": "numberValue",
+                "value": "={{ $json.carbs_g }}"
+              },
+              {
+                "id": "imf8",
+                "name": "fat_g",
+                "type": "numberValue",
+                "value": "={{ $json.fat_g }}"
+              },
+              {
+                "id": "imf9",
+                "name": "source",
+                "type": "stringValue",
+                "value": "={{ $json.source }}"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "id": "node-write-img-food",
+      "name": "Write Img Food Items",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2032,
+        800
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "schemaType": "manual",
+            "values": [
+              {
+                "id": "ifu1",
+                "name": "timestamp",
+                "type": "stringValue",
+                "value": "={{ new Date().toISOString() }}"
+              },
+              {
+                "id": "ifu2",
+                "name": "chat_id",
+                "type": "stringValue",
+                "value": "={{ $('Prepare Image').item.json.chatId }}"
+              },
+              {
+                "id": "ifu3",
+                "name": "role",
+                "type": "stringValue",
+                "value": "user"
+              },
+              {
+                "id": "ifu4",
+                "name": "content",
+                "type": "stringValue",
+                "value": "={{ $('Prepare Image').item.json.userMessage }} [photo]"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "id": "node-save-img-food-user",
+      "name": "Save Img Food User Msg",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2240,
+        800
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "schemaType": "manual",
+            "values": [
+              {
+                "id": "ifa1",
+                "name": "timestamp",
+                "type": "stringValue",
+                "value": "={{ new Date().toISOString() }}"
+              },
+              {
+                "id": "ifa2",
+                "name": "chat_id",
+                "type": "stringValue",
+                "value": "={{ $('Prepare Image').item.json.chatId }}"
+              },
+              {
+                "id": "ifa3",
+                "name": "role",
+                "type": "stringValue",
+                "value": "assistant"
+              },
+              {
+                "id": "ifa4",
+                "name": "content",
+                "type": "stringValue",
+                "value": "={{ $('Parse Img Food Response').first().json._summary }}"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "id": "node-save-img-food-asst",
+      "name": "Save Img Food Asst Msg",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2464,
+        800
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Prepare Image').item.json.chatId }}",
+        "text": "={{ $('Parse Img Food Response').first().json._summary }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "node-reply-img-food",
+      "name": "Reply Img Food",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2688,
+        800
+      ],
+      "webhookId": "80395b4f-37cf-470b-a3f4-13b5ecd6b05f",
+      "credentials": {
+        "telegramApi": {
+          "id": "A5mb1Ts6wYCACmrr",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "options": {}
+      },
+      "id": "node-read-memory-image",
+      "name": "Read Memory Image",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1152,
+        1056
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const memoryRows = $('Read Memory Image').all().map(i => i.json);\nconst userMessage = $('Prepare Image').item.json.userMessage;\nconst chatId = $('Prepare Image').item.json.chatId;\nconst imageBase64 = $('Prepare Image').item.json.imageBase64;\nconst imageMimeType = $('Prepare Image').item.json.imageMimeType;\n\nconst sorted = memoryRows\n  .filter(r => r.timestamp)\n  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))\n  .slice(0, 10)\n  .reverse();\n\nconst messages = sorted.map(r => ({\n  role: r.role || 'user',\n  content: String(r.content || '')\n}));\n\nmessages.push({\n  role: 'user',\n  content: [\n    { type: 'image', source: { type: 'base64', media_type: imageMimeType, data: imageBase64 } },\n    { type: 'text', text: userMessage }\n  ]\n});\n\nconst today = new Date().toISOString().split('T')[0];\n\nconst requestBody = {\n  model: 'claude-sonnet-4-6',\n  max_tokens: 2048,\n  system: 'You are Your Name\\'s personal AI assistant \u2014 her second brain \u2014 available on Telegram.\\n\\nToday\\'s date: ' + today + '\\n\\nWho Your Name is: Brazilian, 33, based in Berlin. Married Kay in Dec 2025. Economics background. 10+ years GTM ops and RevOps.\\n\\nHow to respond:\\n- Direct, no fluff, casual tone, match her energy\\n- Complete solutions, never partial snippets\\n- Same language she writes in (English or Portuguese)\\n- If venting, help think through it practically\\n- Honesty over being spared the reality',\n  messages\n};\n\nreturn [{ json: { requestBody: JSON.stringify(requestBody), userMessage, chatId, imageBase64, imageMimeType } }];"
+      },
+      "id": "node-build-msgs-image",
+      "name": "Build Messages Image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        1056
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "node-claude-image",
+      "name": "Claude Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1584,
+        1056
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YftLcLuY7oj1yCrv",
+          "name": "Header Auth account"
+        },
+        "anthropicApi": {
+          "id": "ZDET7VGt2ObFDWsT",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "schemaType": "manual",
+            "values": [
+              {
+                "id": "iu1",
+                "name": "timestamp",
+                "type": "stringValue",
+                "value": "={{ new Date().toISOString() }}"
+              },
+              {
+                "id": "iu2",
+                "name": "chat_id",
+                "type": "stringValue",
+                "value": "={{ $('Prepare Image').item.json.chatId }}"
+              },
+              {
+                "id": "iu3",
+                "name": "role",
+                "type": "stringValue",
+                "value": "user"
+              },
+              {
+                "id": "iu4",
+                "name": "content",
+                "type": "stringValue",
+                "value": "={{ $('Prepare Image').item.json.userMessage }} [photo]"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "id": "node-save-user-image",
+      "name": "Save User Msg Image",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1808,
+        1056
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "chat_memory"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "schemaType": "manual",
+            "values": [
+              {
+                "id": "ia1",
+                "name": "timestamp",
+                "type": "stringValue",
+                "value": "={{ new Date().toISOString() }}"
+              },
+              {
+                "id": "ia2",
+                "name": "chat_id",
+                "type": "stringValue",
+                "value": "={{ $('Prepare Image').item.json.chatId }}"
+              },
+              {
+                "id": "ia3",
+                "name": "role",
+                "type": "stringValue",
+                "value": "assistant"
+              },
+              {
+                "id": "ia4",
+                "name": "content",
+                "type": "stringValue",
+                "value": "={{ $('Claude Image').item.json.content[0].text }}"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "id": "node-save-asst-image",
+      "name": "Save Asst Msg Image",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2032,
+        1056
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Prepare Image').item.json.chatId }}",
+        "text": "={{ $('Claude Image').item.json.content[0].text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "node-reply-image",
+      "name": "Reply Image",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2240,
+        1056
+      ],
+      "webhookId": "d2c0bb28-6070-4b3a-a269-2cdf2c7e98ab",
+      "credentials": {
+        "telegramApi": {
+          "id": "A5mb1Ts6wYCACmrr",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "So consigo processar texto, voz e imagens. / I can only handle text, voice and images.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "node-unsupported",
+      "name": "Unsupported Type",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        1312
+      ],
+      "webhookId": "3864341d-9240-4334-bb38-e6078c4262ab",
+      "credentials": {
+        "telegramApi": {
+          "id": "A5mb1Ts6wYCACmrr",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "node-weekly-trigger",
+      "name": "Weekly Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        1600
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "meals"
+        },
+        "options": {}
+      },
+      "id": "node-read-meals-weekly",
+      "name": "Read All Meals",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        240,
+        1600
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const allMeals = $('Read All Meals').all().map(i => i.json);\nconst now = new Date();\nconst sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\nconst sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];\n\nconst recentMeals = allMeals.filter(m => m.date && m.date >= sevenDaysAgoStr);\n\nif (recentMeals.length === 0) {\n  return [{ json: { hasMeals: false, prompt: 'No meals logged in the past 7 days.' } }];\n}\n\nlet mealText = 'Here are my meals from the past 7 days:\\n\\n';\nconst byDate = {};\nfor (const m of recentMeals) {\n  if (!byDate[m.date]) byDate[m.date] = [];\n  byDate[m.date].push(m);\n}\n\nfor (const date of Object.keys(byDate).sort()) {\n  mealText += date + ':\\n';\n  for (const m of byDate[date]) {\n    mealText += '  ' + (m.meal_type || '?') + ': ' + (m.item || '?') + ' ' + (m.weight_g || 0) + 'g \u2014 ' + (m.calories || 0) + ' cal, P:' + (m.protein_g || 0) + 'g C:' + (m.carbs_g || 0) + 'g F:' + (m.fat_g || 0) + 'g\\n';\n  }\n  mealText += '\\n';\n}\n\nmealText += 'Please generate my weekly nutrition summary.';\n\nreturn [{ json: { hasMeals: true, prompt: mealText, mealCount: recentMeals.length } }];"
+      },
+      "id": "node-filter-weekly",
+      "name": "Filter Last 7 Days",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        1600
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "rightValue": ""
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.hasMeals }}",
+              "id": "condition-1772026938596-cgvro12qf"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-if-has-meals",
+      "name": "Has Meals?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        1600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (function() { const prompt = $json.prompt.replace(/\\\"/g, '\\\\\"').replace(/\\n/g, '\\\\n'); return '{\"model\": \"claude-sonnet-4-6\", \"max_tokens\": 4096, \"system\": \"You are Your Name's nutrition coach AI. Analyze the meal data from the past week and generate a weekly summary.\\n\\n## Instructions\\n- Calculate daily averages for calories, protein, carbs, fat\\n- Identify top foods by frequency and caloric contribution\\n- Show macro split percentages (protein/carbs/fat as % of total calories)\\n- Give 2-3 actionable behavioral tips based on patterns you see\\n- Keep it direct, no fluff\\n- Format nicely for Telegram (use bold for headers)\\n\\nToday's date: {{ new Date().toISOString().split('T')[0] }}\", \"messages\": [{\"role\": \"user\", \"content\": \"' + prompt + '\"}]}'; })() }}",
+        "options": {}
+      },
+      "id": "node-claude-weekly",
+      "name": "Claude Weekly Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        928,
+        1600
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YftLcLuY7oj1yCrv",
+          "name": "Header Auth account"
+        },
+        "anthropicApi": {
+          "id": "ZDET7VGt2ObFDWsT",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "mode": "id",
+          "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+        },
+        "sheetName": {
+          "mode": "name",
+          "value": "weekly_summary"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "schemaType": "manual",
+            "values": [
+              {
+                "id": "ws1",
+                "name": "week_ending",
+                "type": "stringValue",
+                "value": "={{ new Date().toISOString().split('T')[0] }}"
+              },
+              {
+                "id": "ws2",
+                "name": "summary",
+                "type": "stringValue",
+                "value": "={{ $json.content[0].text }}"
+              },
+              {
+                "id": "ws3",
+                "name": "meal_count",
+                "type": "numberValue",
+                "value": "={{ $('Filter Last 7 Days').item.json.mealCount }}"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "id": "node-save-weekly",
+      "name": "Save Weekly Summary",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1152,
+        1600
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "1984567776",
+        "text": "={{ $('Claude Weekly Summary').item.json.content[0].text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "node-send-weekly",
+      "name": "Send Weekly Summary",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1360,
+        1600
+      ],
+      "webhookId": "47bec873-f077-4e27-a628-6b4b27f1da57",
+      "credentials": {
+        "telegramApi": {
+          "id": "A5mb1Ts6wYCACmrr",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "1984567776",
+        "text": "No meals logged this week. Start tracking with 'log breakfast: 200g oatmeal, 1 banana' or send a food photo with 'log' in the caption.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "node-no-meals",
+      "name": "No Meals Nudge",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        928,
+        1808
+      ],
+      "webhookId": "005dc3a1-0a20-46e2-9b28-e2397075fb77",
+      "credentials": {
+        "telegramApi": {
+          "id": "A5mb1Ts6wYCACmrr",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Verify Message Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Message Type": {
+      "main": [
+        [
+          {
+            "node": "Set Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Voice File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Image File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unsupported Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Text": {
+      "main": [
+        [
+          {
+            "node": "Is Food Log?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Food Log?": {
+      "main": [
+        [
+          {
+            "node": "Read Memory Food",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Memory Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Memory Food": {
+      "main": [
+        [
+          {
+            "node": "Build Messages Food",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Messages Food": {
+      "main": [
+        [
+          {
+            "node": "Claude Food Parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Food Parse": {
+      "main": [
+        [
+          {
+            "node": "Parse Food Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Food Response": {
+      "main": [
+        [
+          {
+            "node": "Write Food Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Food Items": {
+      "main": [
+        [
+          {
+            "node": "Save Food User Msg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Food User Msg": {
+      "main": [
+        [
+          {
+            "node": "Save Food Asst Msg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Food Asst Msg": {
+      "main": [
+        [
+          {
+            "node": "Reply Food",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Memory Text": {
+      "main": [
+        [
+          {
+            "node": "Build Messages Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Messages Text": {
+      "main": [
+        [
+          {
+            "node": "Claude Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Text": {
+      "main": [
+        [
+          {
+            "node": "Save User Msg Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save User Msg Text": {
+      "main": [
+        [
+          {
+            "node": "Save Asst Msg Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Asst Msg Text": {
+      "main": [
+        [
+          {
+            "node": "Reply Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Voice File": {
+      "main": [
+        [
+          {
+            "node": "Whisper Transcribe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whisper Transcribe": {
+      "main": [
+        [
+          {
+            "node": "Set Voice Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Voice Text": {
+      "main": [
+        [
+          {
+            "node": "Read Memory Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Memory Voice": {
+      "main": [
+        [
+          {
+            "node": "Build Messages Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Messages Voice": {
+      "main": [
+        [
+          {
+            "node": "Claude Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Voice": {
+      "main": [
+        [
+          {
+            "node": "Save User Msg Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save User Msg Voice": {
+      "main": [
+        [
+          {
+            "node": "Save Asst Msg Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Asst Msg Voice": {
+      "main": [
+        [
+          {
+            "node": "Reply Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Image File": {
+      "main": [
+        [
+          {
+            "node": "Prepare Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Image": {
+      "main": [
+        [
+          {
+            "node": "Is Food Photo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Food Photo?": {
+      "main": [
+        [
+          {
+            "node": "Read Memory Img Food",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Memory Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Memory Img Food": {
+      "main": [
+        [
+          {
+            "node": "Build Msgs Img Food",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Msgs Img Food": {
+      "main": [
+        [
+          {
+            "node": "Claude Image Food",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Image Food": {
+      "main": [
+        [
+          {
+            "node": "Parse Img Food Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Img Food Response": {
+      "main": [
+        [
+          {
+            "node": "Write Img Food Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Img Food Items": {
+      "main": [
+        [
+          {
+            "node": "Save Img Food User Msg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Img Food User Msg": {
+      "main": [
+        [
+          {
+            "node": "Save Img Food Asst Msg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Img Food Asst Msg": {
+      "main": [
+        [
+          {
+            "node": "Reply Img Food",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Memory Image": {
+      "main": [
+        [
+          {
+            "node": "Build Messages Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Messages Image": {
+      "main": [
+        [
+          {
+            "node": "Claude Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Image": {
+      "main": [
+        [
+          {
+            "node": "Save User Msg Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save User Msg Image": {
+      "main": [
+        [
+          {
+            "node": "Save Asst Msg Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Asst Msg Image": {
+      "main": [
+        [
+          {
+            "node": "Reply Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read All Meals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read All Meals": {
+      "main": [
+        [
+          {
+            "node": "Filter Last 7 Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Last 7 Days": {
+      "main": [
+        [
+          {
+            "node": "Has Meals?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Meals?": {
+      "main": [
+        [
+          {
+            "node": "Claude Weekly Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Meals Nudge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Weekly Summary": {
+      "main": [
+        [
+          {
+            "node": "Save Weekly Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Weekly Summary": {
+      "main": [
+        [
+          {
+            "node": "Send Weekly Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": {
+    "node:Weekly Trigger": {
+      "recurrenceRules": []
+    }
+  },
+  "meta": null,
+  "pinData": {
+    "Telegram Trigger": [
+      {
+        "json": {
+          "update_id": 595486857,
+          "message": {
+            "message_id": 39,
+            "from": {
+              "id": 1984567776,
+              "is_bot": false,
+              "first_name": "Your Name",
+              "last_name": "Babicz",
+              "username": "vbabicz",
+              "language_code": "en"
+            },
+            "chat": {
+              "id": 1984567776,
+              "first_name": "Your Name",
+              "last_name": "Babicz",
+              "username": "vbabicz",
+              "type": "private"
+            },
+            "date": 1772027696,
+            "photo": [
+              {
+                "file_id": "AgACAgIAAxkBAAMlaZ73JzLjOmamhUoeFt00HoGBQQEAAgEVaxsHD_hI_Qfk-4UWLK0BAAMCAANzAAM6BA",
+                "file_unique_id": "AQADARVrGwcP-Eh4",
+                "file_size": 475,
+                "width": 90,
+                "height": 25
+              },
+              {
+                "file_id": "AgACAgIAAxkBAAMlaZ73JzLjOmamhUoeFt00HoGBQQEAAgEVaxsHD_hI_Qfk-4UWLK0BAAMCAANtAAM6BA",
+                "file_unique_id": "AQADARVrGwcP-Ehy",
+                "file_size": 3094,
+                "width": 320,
+                "height": 89
+              },
+              {
+                "file_id": "AgACAgIAAxkBAAMlaZ73JzLjOmamhUoeFt00HoGBQQEAAgEVaxsHD_hI_Qfk-4UWLK0BAAMCAAN4AAM6BA",
+                "file_unique_id": "AQADARVrGwcP-Eh9",
+                "file_size": 11109,
+                "width": 800,
+                "height": 222
+              },
+              {
+                "file_id": "AgACAgIAAxkBAAMlaZ73JzLjOmamhUoeFt00HoGBQQEAAgEVaxsHD_hI_Qfk-4UWLK0BAAMCAAN5AAM6BA",
+                "file_unique_id": "AQADARVrGwcP-Eh-",
+                "file_size": 13789,
+                "width": 1280,
+                "height": 356
+              }
+            ],
+            "caption": "Breakfast"
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "versionId": "d0f7e3ac-d0bd-4eff-b07e-c58fa446b990",
+  "activeVersionId": "b03c4891-3c3e-4d28-ad31-25919ea92d30",
+  "versionCounter": 80,
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-02-20T13:41:33.855Z",
+      "createdAt": "2026-02-20T13:41:33.855Z",
+      "role": "workflow:owner",
+      "workflowId": "Fq6xyoiSzqPGDVqK",
+      "projectId": "1xouAt4QdWWhUWuM",
+      "project": {
+        "updatedAt": "2025-10-13T14:48:28.241Z",
+        "createdAt": "2025-10-13T14:47:21.362Z",
+        "id": "1xouAt4QdWWhUWuM",
+        "name": "Your Name <your-email@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-25T13:42:18.750Z",
+    "createdAt": "2026-02-25T13:42:18.750Z",
+    "versionId": "b03c4891-3c3e-4d28-ad31-25919ea92d30",
+    "workflowId": "Fq6xyoiSzqPGDVqK",
+    "nodes": [
+      {
+        "parameters": {
+          "updates": [
+            "message"
+          ],
+          "additionalFields": {}
+        },
+        "id": "node-trigger",
+        "name": "Telegram Trigger",
+        "type": "n8n-nodes-base.telegramTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          0,
+          400
+        ],
+        "webhookId": "65f501de-3c14-4089-9b9d-8956676bebf3",
+        "credentials": {
+          "telegramApi": {
+            "id": "A5mb1Ts6wYCACmrr",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "combinator": "and",
+                  "options": {
+                    "version": 2,
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "conditions": [
+                    {
+                      "operator": {
+                        "type": "array",
+                        "operation": "contains",
+                        "rightType": "any"
+                      },
+                      "leftValue": "={{ $json.message.keys() }}",
+                      "rightValue": "text"
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "Text"
+              },
+              {
+                "conditions": {
+                  "combinator": "and",
+                  "options": {
+                    "version": 2,
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "conditions": [
+                    {
+                      "operator": {
+                        "type": "array",
+                        "operation": "contains",
+                        "rightType": "any"
+                      },
+                      "leftValue": "={{ $json.message.keys() }}",
+                      "rightValue": "voice"
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "Voice"
+              },
+              {
+                "conditions": {
+                  "combinator": "and",
+                  "options": {
+                    "version": 2,
+                    "caseSensitive": true,
+                    "typeValidation": "strict"
+                  },
+                  "conditions": [
+                    {
+                      "operator": {
+                        "type": "array",
+                        "operation": "contains",
+                        "rightType": "any"
+                      },
+                      "leftValue": "={{ $json.message.keys() }}",
+                      "rightValue": "photo"
+                    }
+                  ]
+                },
+                "renameOutput": true,
+                "outputKey": "Image"
+              }
+            ]
+          },
+          "options": {
+            "fallbackOutput": "extra"
+          }
+        },
+        "id": "node-switch",
+        "name": "Verify Message Type",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.2,
+        "position": [
+          240,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "a1",
+                "name": "userMessage",
+                "type": "string",
+                "value": "={{ $json.message.text }}"
+              },
+              {
+                "id": "a2",
+                "name": "chatId",
+                "type": "string",
+                "value": "={{ $json.message.chat.id }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "node-set-text",
+        "name": "Set Text",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          480,
+          112
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": false,
+              "typeValidation": "strict",
+              "rightValue": ""
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "operator": {
+                  "type": "string",
+                  "operation": "startsWith"
+                },
+                "leftValue": "={{ $json.userMessage }}",
+                "rightValue": "log ",
+                "id": "condition-1772026938596-4jsg6muf0"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "node-is-food-log",
+        "name": "Is Food Log?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          704,
+          112
+        ]
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "options": {}
+        },
+        "id": "node-read-memory-food",
+        "name": "Read Memory Food",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          928,
+          -96
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const memoryRows = $('Read Memory Food').all().map(i => i.json);\nconst userMessage = $('Set Text').item.json.userMessage;\nconst chatId = $('Set Text').item.json.chatId;\n\nconst sorted = memoryRows\n  .filter(r => r.timestamp)\n  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))\n  .slice(0, 10)\n  .reverse();\n\nconst messages = sorted.map(r => ({\n  role: r.role || 'user',\n  content: String(r.content || '')\n}));\n\nmessages.push({ role: 'user', content: userMessage });\n\nreturn [{ json: { messages, userMessage, chatId } }];"
+        },
+        "id": "node-build-msgs-food",
+        "name": "Build Messages Food",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1152,
+          -96
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.anthropic.com/v1/messages",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "anthropicApi",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "anthropic-version",
+                "value": "2023-06-01"
+              },
+              {
+                "name": "content-type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ (function() {\n  const msgs = $json.messages.map(m => JSON.stringify(m)).join(',');\n  return '{\"model\": \"claude-sonnet-4-6\", \"max_tokens\": 2048, \"system\": \"You are a nutrition tracking assistant for Your Name. Your job is to parse food log messages and calculate nutritional information.\\n\\nToday's date: {{ new Date().toISOString().split('T')[0] }}\\n\\n## Instructions\\n- Parse the food items from the user's message\\n- The format is usually: \\\"log meal_type: weight item, weight item, ...\\\" but be flexible\\n- If meal_type is not specified, infer from the time or default to \\\"snack\\\"\\n- Calculate calories, protein, carbs, fat per item using USDA nutritional data per 100g\\n- Use chat history for context (e.g. \\\"same as yesterday\\\", \\\"also add 100g broccoli\\\")\\n- For image-based food logs: read nutrition labels, identify foods, estimate portions\\n\\n## Response format\\nReturn ONLY valid JSON, no markdown, no backticks:\\n{\\n  \\\"meal_type\\\": \\\"lunch\\\",\\n  \\\"items\\\": [\\n    {\\\"item\\\": \\\"chicken breast\\\", \\\"weight_g\\\": 200, \\\"calories\\\": 330, \\\"protein_g\\\": 62, \\\"carbs_g\\\": 0, \\\"fat_g\\\": 7.2}\\n  ],\\n  \\\"summary\\\": \\\"Lunch logged \\u2014 530 cal | P: 67g | C: 38g | F: 9g\\\"\\n}\", \"messages\": [' + msgs + ']}';\n})() }}",
+          "options": {}
+        },
+        "id": "node-claude-food",
+        "name": "Claude Food Parse",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1360,
+          -96
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "YftLcLuY7oj1yCrv",
+            "name": "Header Auth account"
+          },
+          "anthropicApi": {
+            "id": "ZDET7VGt2ObFDWsT",
+            "name": "Anthropic account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const responseText = $json.content[0].text;\nlet parsed;\ntry {\n  const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n  parsed = JSON.parse(jsonMatch ? jsonMatch[0] : responseText);\n} catch(e) {\n  parsed = { meal_type: 'unknown', items: [], summary: 'Failed to parse food data: ' + responseText.substring(0, 200) };\n}\n\nconst today = new Date().toISOString().split('T')[0];\n\nconst items = (parsed.items || []).map(item => ({\n  json: {\n    date: today,\n    meal_type: parsed.meal_type || 'snack',\n    item: item.item,\n    weight_g: item.weight_g || 0,\n    calories: item.calories || 0,\n    protein_g: item.protein_g || 0,\n    carbs_g: item.carbs_g || 0,\n    fat_g: item.fat_g || 0,\n    source: 'telegram'\n  }\n}));\n\nif (items.length === 0) {\n  items.push({ json: { date: today, meal_type: 'unknown', item: 'parse_error', weight_g: 0, calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, source: 'telegram' } });\n}\n\nitems[0].json._summary = parsed.summary || 'Food logged';\nitems[0].json._fullResponse = responseText;\n\nreturn items;"
+        },
+        "id": "node-parse-food",
+        "name": "Parse Food Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1584,
+          -96
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "meals"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "schemaType": "manual",
+              "values": [
+                {
+                  "id": "tf1",
+                  "name": "date",
+                  "type": "stringValue",
+                  "value": "={{ $json.date }}"
+                },
+                {
+                  "id": "tf2",
+                  "name": "meal_type",
+                  "type": "stringValue",
+                  "value": "={{ $json.meal_type }}"
+                },
+                {
+                  "id": "tf3",
+                  "name": "item",
+                  "type": "stringValue",
+                  "value": "={{ $json.item }}"
+                },
+                {
+                  "id": "tf4",
+                  "name": "weight_g",
+                  "type": "numberValue",
+                  "value": "={{ $json.weight_g }}"
+                },
+                {
+                  "id": "tf5",
+                  "name": "calories",
+                  "type": "numberValue",
+                  "value": "={{ $json.calories }}"
+                },
+                {
+                  "id": "tf6",
+                  "name": "protein_g",
+                  "type": "numberValue",
+                  "value": "={{ $json.protein_g }}"
+                },
+                {
+                  "id": "tf7",
+                  "name": "carbs_g",
+                  "type": "numberValue",
+                  "value": "={{ $json.carbs_g }}"
+                },
+                {
+                  "id": "tf8",
+                  "name": "fat_g",
+                  "type": "numberValue",
+                  "value": "={{ $json.fat_g }}"
+                },
+                {
+                  "id": "tf9",
+                  "name": "source",
+                  "type": "stringValue",
+                  "value": "={{ $json.source }}"
+                }
+              ]
+            }
+          },
+          "options": {}
+        },
+        "id": "node-write-food",
+        "name": "Write Food Items",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          1808,
+          -96
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "schemaType": "manual",
+              "values": [
+                {
+                  "id": "fu1",
+                  "name": "timestamp",
+                  "type": "stringValue",
+                  "value": "={{ new Date().toISOString() }}"
+                },
+                {
+                  "id": "fu2",
+                  "name": "chat_id",
+                  "type": "stringValue",
+                  "value": "={{ $('Set Text').item.json.chatId }}"
+                },
+                {
+                  "id": "fu3",
+                  "name": "role",
+                  "type": "stringValue",
+                  "value": "user"
+                },
+                {
+                  "id": "fu4",
+                  "name": "content",
+                  "type": "stringValue",
+                  "value": "={{ $('Set Text').item.json.userMessage }}"
+                }
+              ]
+            }
+          },
+          "options": {}
+        },
+        "id": "node-save-food-user",
+        "name": "Save Food User Msg",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          2032,
+          -96
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "schemaType": "manual",
+              "values": [
+                {
+                  "id": "fa1",
+                  "name": "timestamp",
+                  "type": "stringValue",
+                  "value": "={{ new Date().toISOString() }}"
+                },
+                {
+                  "id": "fa2",
+                  "name": "chat_id",
+                  "type": "stringValue",
+                  "value": "={{ $('Set Text').item.json.chatId }}"
+                },
+                {
+                  "id": "fa3",
+                  "name": "role",
+                  "type": "stringValue",
+                  "value": "assistant"
+                },
+                {
+                  "id": "fa4",
+                  "name": "content",
+                  "type": "stringValue",
+                  "value": "={{ $('Parse Food Response').first().json._summary }}"
+                }
+              ]
+            }
+          },
+          "options": {}
+        },
+        "id": "node-save-food-asst",
+        "name": "Save Food Asst Msg",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          2240,
+          -96
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $('Set Text').item.json.chatId }}",
+          "text": "={{ $('Parse Food Response').first().json._summary }}",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "id": "node-reply-food",
+        "name": "Reply Food",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          2464,
+          -96
+        ],
+        "webhookId": "849ce50a-1729-4268-8e5f-bd5937325f53",
+        "credentials": {
+          "telegramApi": {
+            "id": "A5mb1Ts6wYCACmrr",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "options": {}
+        },
+        "id": "node-read-memory-text",
+        "name": "Read Memory Text",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          928,
+          304
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const memoryRows = $('Read Memory Text').all().map(i => i.json);\nconst userMessage = $('Set Text').item.json.userMessage;\nconst chatId = $('Set Text').item.json.chatId;\n\nconst sorted = memoryRows\n  .filter(r => r.timestamp)\n  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))\n  .slice(0, 10)\n  .reverse();\n\nconst messages = sorted.map(r => ({\n  role: r.role || 'user',\n  content: String(r.content || '')\n}));\n\nmessages.push({ role: 'user', content: userMessage });\n\nreturn [{ json: { messages, userMessage, chatId } }];"
+        },
+        "id": "node-build-msgs-text",
+        "name": "Build Messages Text",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1152,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.anthropic.com/v1/messages",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "anthropicApi",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "anthropic-version",
+                "value": "2023-06-01"
+              },
+              {
+                "name": "content-type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ (function() {\n  const msgs = $json.messages.map(m => JSON.stringify(m)).join(',');\n  return '{\"model\": \"claude-sonnet-4-6\", \"max_tokens\": 2048, \"system\": \"You are Your Name's personal AI assistant \\u2014 her second brain \\u2014 available on Telegram.\\n\\nToday's date: {{ new Date().toISOString().split('T')[0] }}\\n\\n## Who Your Name is\\nBrazilian, 33, based in Berlin. Married Kay (German, BKA officer transitioning to diplomatic liaison starting Jan 2028) in December 2025 in Denmark. Economics background. ExxonMobil, Bosch alumni. 10+ years GTM ops and RevOps.\\n\\n## Current work\\n\\n### YourCompany (16h/week, \\u20ac2,500/month)\\nHead of CS / Sales. Cybersecurity compliance consulting, Drata partner. Built ~90% automated sales system: AI email responses, Qwilr proposals, follow-up sequences. 4x free-to-paid conversion. Tech: HubSpot (team@company.com), Microsoft 365, n8n.\\n\\n### FoodAmigos (fractional COO, \\u20ac75-100+/hr)\\nGerman restaurant SaaS. 70K+ monthly leads (UberEats, Lieferando, Wolt). Pipeline: merge, exclusion, normalize, dedup. LLM lead scoring. HubSpot SDR task automation (5 SMs, 70 tasks/day). Tech: Python, n8n, HubSpot, Docker on DigitalOcean Frankfurt.\\n\\n## Tech stack\\nn8n, HubSpot, Python, JS, Google Sheets, DigitalOcean, Microsoft 365, Slack, Qwilr, Xero, DocuSeal, Anthropic Claude API\\n\\n## Career direction\\nLive n8n automation workshops for technical professionals. Target: \\u20ac15-20K/month in 3 years.\\n\\n## Personal\\n- Kay Steinberg: BKA, A10 April 2026, liaison pool Feb 2026, diplomatic posting 2028\\n- Languages: Portuguese (native), English (fluent), German (functional), Spanish (functional)\\n- Interests: cooking, running 10km/week, travel (60+ countries), mystery/thriller books\\n\\n## How to respond\\n- Direct, no fluff, casual tone, match her energy\\n- Always complete solutions, never partial snippets\\n- Same language she writes in (English or Portuguese)\\n- If venting, help think through it practically\\n- Honesty over being spared the reality\", \"messages\": [' + msgs + ']}';\n})() }}",
+          "options": {}
+        },
+        "id": "node-claude-text",
+        "name": "Claude Text",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1360,
+          304
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "YftLcLuY7oj1yCrv",
+            "name": "Header Auth account"
+          },
+          "anthropicApi": {
+            "id": "ZDET7VGt2ObFDWsT",
+            "name": "Anthropic account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "schemaType": "manual",
+              "values": [
+                {
+                  "id": "su1",
+                  "name": "timestamp",
+                  "type": "stringValue",
+                  "value": "={{ new Date().toISOString() }}"
+                },
+                {
+                  "id": "su2",
+                  "name": "chat_id",
+                  "type": "stringValue",
+                  "value": "={{ $('Set Text').item.json.chatId }}"
+                },
+                {
+                  "id": "su3",
+                  "name": "role",
+                  "type": "stringValue",
+                  "value": "user"
+                },
+                {
+                  "id": "su4",
+                  "name": "content",
+                  "type": "stringValue",
+                  "value": "={{ $('Set Text').item.json.userMessage }}"
+                }
+              ]
+            }
+          },
+          "options": {}
+        },
+        "id": "node-save-user-text",
+        "name": "Save User Msg Text",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          1584,
+          304
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "schemaType": "manual",
+              "values": [
+                {
+                  "id": "sa1",
+                  "name": "timestamp",
+                  "type": "stringValue",
+                  "value": "={{ new Date().toISOString() }}"
+                },
+                {
+                  "id": "sa2",
+                  "name": "chat_id",
+                  "type": "stringValue",
+                  "value": "={{ $('Set Text').item.json.chatId }}"
+                },
+                {
+                  "id": "sa3",
+                  "name": "role",
+                  "type": "stringValue",
+                  "value": "assistant"
+                },
+                {
+                  "id": "sa4",
+                  "name": "content",
+                  "type": "stringValue",
+                  "value": "={{ $('Claude Text').item.json.content[0].text }}"
+                }
+              ]
+            }
+          },
+          "options": {}
+        },
+        "id": "node-save-asst-text",
+        "name": "Save Asst Msg Text",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          1808,
+          304
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $('Set Text').item.json.chatId }}",
+          "text": "={{ $('Claude Text').item.json.content[0].text }}",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "id": "node-reply-text",
+        "name": "Reply Text",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          2032,
+          304
+        ],
+        "webhookId": "266d1311-b62b-4bc3-92e4-98cdb4d2fd90",
+        "credentials": {
+          "telegramApi": {
+            "id": "A5mb1Ts6wYCACmrr",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "resource": "file",
+          "fileId": "={{ $json.message.voice.file_id }}",
+          "additionalFields": {}
+        },
+        "id": "node-get-voice",
+        "name": "Get Voice File",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          480,
+          608
+        ],
+        "webhookId": "78ee6c30-4e5f-4fbc-9b78-f3870abe8bb6",
+        "credentials": {
+          "telegramApi": {
+            "id": "A5mb1Ts6wYCACmrr",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "resource": "audio",
+          "operation": "translate",
+          "options": {}
+        },
+        "id": "node-transcribe",
+        "name": "Whisper Transcribe",
+        "type": "@n8n/n8n-nodes-langchain.openAi",
+        "typeVersion": 1.8,
+        "position": [
+          704,
+          608
+        ],
+        "credentials": {
+          "openAiApi": {
+            "id": "d03HNhtWh3tV5wdT",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "b1",
+                "name": "userMessage",
+                "type": "string",
+                "value": "={{ $json.text }}"
+              },
+              {
+                "id": "b2",
+                "name": "chatId",
+                "type": "string",
+                "value": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "node-set-voice",
+        "name": "Set Voice Text",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          928,
+          608
+        ]
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "options": {}
+        },
+        "id": "node-read-memory-voice",
+        "name": "Read Memory Voice",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          1152,
+          608
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const memoryRows = $('Read Memory Voice').all().map(i => i.json);\nconst userMessage = $('Set Voice Text').item.json.userMessage;\nconst chatId = $('Set Voice Text').item.json.chatId;\n\nconst sorted = memoryRows\n  .filter(r => r.timestamp)\n  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))\n  .slice(0, 10)\n  .reverse();\n\nconst messages = sorted.map(r => ({\n  role: r.role || 'user',\n  content: String(r.content || '')\n}));\n\nmessages.push({ role: 'user', content: userMessage });\n\nreturn [{ json: { messages, userMessage, chatId } }];"
+        },
+        "id": "node-build-msgs-voice",
+        "name": "Build Messages Voice",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1360,
+          608
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.anthropic.com/v1/messages",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "anthropicApi",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "anthropic-version",
+                "value": "2023-06-01"
+              },
+              {
+                "name": "content-type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ (function() {\n  const msgs = $json.messages.map(m => JSON.stringify(m)).join(',');\n  return '{\"model\": \"claude-sonnet-4-6\", \"max_tokens\": 2048, \"system\": \"You are Your Name's personal AI assistant \\u2014 her second brain \\u2014 available on Telegram.\\n\\nToday's date: {{ new Date().toISOString().split('T')[0] }}\\n\\n## Who Your Name is\\nBrazilian, 33, based in Berlin. Married Kay (German, BKA officer transitioning to diplomatic liaison starting Jan 2028) in December 2025 in Denmark. Economics background. ExxonMobil, Bosch alumni. 10+ years GTM ops and RevOps.\\n\\n## Current work\\n\\n### YourCompany (16h/week, \\u20ac2,500/month)\\nHead of CS / Sales. Cybersecurity compliance consulting, Drata partner. Built ~90% automated sales system: AI email responses, Qwilr proposals, follow-up sequences. 4x free-to-paid conversion. Tech: HubSpot (team@company.com), Microsoft 365, n8n.\\n\\n### FoodAmigos (fractional COO, \\u20ac75-100+/hr)\\nGerman restaurant SaaS. 70K+ monthly leads (UberEats, Lieferando, Wolt). Pipeline: merge, exclusion, normalize, dedup. LLM lead scoring. HubSpot SDR task automation (5 SMs, 70 tasks/day). Tech: Python, n8n, HubSpot, Docker on DigitalOcean Frankfurt.\\n\\n## Tech stack\\nn8n, HubSpot, Python, JS, Google Sheets, DigitalOcean, Microsoft 365, Slack, Qwilr, Xero, DocuSeal, Anthropic Claude API\\n\\n## Career direction\\nLive n8n automation workshops for technical professionals. Target: \\u20ac15-20K/month in 3 years.\\n\\n## Personal\\n- Kay Steinberg: BKA, A10 April 2026, liaison pool Feb 2026, diplomatic posting 2028\\n- Languages: Portuguese (native), English (fluent), German (functional), Spanish (functional)\\n- Interests: cooking, running 10km/week, travel (60+ countries), mystery/thriller books\\n\\n## How to respond\\n- Direct, no fluff, casual tone, match her energy\\n- Always complete solutions, never partial snippets\\n- Same language she writes in (English or Portuguese)\\n- If venting, help think through it practically\\n- Honesty over being spared the reality\", \"messages\": [' + msgs + ']}';\n})() }}",
+          "options": {}
+        },
+        "id": "node-claude-voice",
+        "name": "Claude Voice",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1584,
+          608
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "YftLcLuY7oj1yCrv",
+            "name": "Header Auth account"
+          },
+          "anthropicApi": {
+            "id": "ZDET7VGt2ObFDWsT",
+            "name": "Anthropic account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "schemaType": "manual",
+              "values": [
+                {
+                  "id": "vu1",
+                  "name": "timestamp",
+                  "type": "stringValue",
+                  "value": "={{ new Date().toISOString() }}"
+                },
+                {
+                  "id": "vu2",
+                  "name": "chat_id",
+                  "type": "stringValue",
+                  "value": "={{ $('Set Voice Text').item.json.chatId }}"
+                },
+                {
+                  "id": "vu3",
+                  "name": "role",
+                  "type": "stringValue",
+                  "value": "user"
+                },
+                {
+                  "id": "vu4",
+                  "name": "content",
+                  "type": "stringValue",
+                  "value": "={{ $('Set Voice Text').item.json.userMessage }}"
+                }
+              ]
+            }
+          },
+          "options": {}
+        },
+        "id": "node-save-user-voice",
+        "name": "Save User Msg Voice",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          1808,
+          608
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "schemaType": "manual",
+              "values": [
+                {
+                  "id": "va1",
+                  "name": "timestamp",
+                  "type": "stringValue",
+                  "value": "={{ new Date().toISOString() }}"
+                },
+                {
+                  "id": "va2",
+                  "name": "chat_id",
+                  "type": "stringValue",
+                  "value": "={{ $('Set Voice Text').item.json.chatId }}"
+                },
+                {
+                  "id": "va3",
+                  "name": "role",
+                  "type": "stringValue",
+                  "value": "assistant"
+                },
+                {
+                  "id": "va4",
+                  "name": "content",
+                  "type": "stringValue",
+                  "value": "={{ $('Claude Voice').item.json.content[0].text }}"
+                }
+              ]
+            }
+          },
+          "options": {}
+        },
+        "id": "node-save-asst-voice",
+        "name": "Save Asst Msg Voice",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          2032,
+          608
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $('Set Voice Text').item.json.chatId }}",
+          "text": "={{ $('Claude Voice').item.json.content[0].text }}",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "id": "node-reply-voice",
+        "name": "Reply Voice",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          2240,
+          608
+        ],
+        "webhookId": "7a9b3009-325c-4366-9170-9469501da100",
+        "credentials": {
+          "telegramApi": {
+            "id": "A5mb1Ts6wYCACmrr",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "resource": "file",
+          "fileId": "={{ $json.message.photo.last().file_id }}",
+          "additionalFields": {}
+        },
+        "id": "node-get-image",
+        "name": "Get Image File",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          480,
+          912
+        ],
+        "webhookId": "deb8b218-e05c-4d6e-8671-1467aa1e5019",
+        "credentials": {
+          "telegramApi": {
+            "id": "A5mb1Ts6wYCACmrr",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const item = $input.first();\nconst imageBase64 = item.binary?.data?.data || '';\nconst mimeType = item.binary?.data?.mimeType || 'image/jpeg';\nconst caption = $('Telegram Trigger').item.json.message?.caption || 'What is in this image?';\nconst chatId = $('Telegram Trigger').item.json.message.chat.id;\nreturn [{ json: { chatId, userMessage: caption, imageBase64, imageMimeType: mimeType } }];"
+        },
+        "id": "node-prep-image",
+        "name": "Prepare Image",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          704,
+          912
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": false,
+              "typeValidation": "strict",
+              "rightValue": ""
+            },
+            "combinator": "or",
+            "conditions": [
+              {
+                "operator": {
+                  "type": "string",
+                  "operation": "contains"
+                },
+                "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+                "rightValue": "log",
+                "id": "condition-1772026938595-yeqx4z1q8"
+              },
+              {
+                "operator": {
+                  "type": "string",
+                  "operation": "contains"
+                },
+                "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+                "rightValue": "breakfast",
+                "id": "condition-1772026938595-dvwnmmdr3"
+              },
+              {
+                "operator": {
+                  "type": "string",
+                  "operation": "contains"
+                },
+                "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+                "rightValue": "lunch",
+                "id": "condition-1772026938595-sebpfq0tv"
+              },
+              {
+                "operator": {
+                  "type": "string",
+                  "operation": "contains"
+                },
+                "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+                "rightValue": "dinner",
+                "id": "condition-1772026938595-ldgv01iue"
+              },
+              {
+                "operator": {
+                  "type": "string",
+                  "operation": "contains"
+                },
+                "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+                "rightValue": "snack",
+                "id": "condition-1772026938595-3bhiwxiye"
+              },
+              {
+                "operator": {
+                  "type": "string",
+                  "operation": "contains"
+                },
+                "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+                "rightValue": "meal",
+                "id": "condition-1772026938595-4bhwma9ns"
+              },
+              {
+                "operator": {
+                  "type": "string",
+                  "operation": "contains"
+                },
+                "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+                "rightValue": "caf\u00e9",
+                "id": "condition-1772026938595-zc7o7wd2z"
+              },
+              {
+                "operator": {
+                  "type": "string",
+                  "operation": "contains"
+                },
+                "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+                "rightValue": "almo\u00e7o",
+                "id": "condition-1772026938595-h7585abv0"
+              },
+              {
+                "operator": {
+                  "type": "string",
+                  "operation": "contains"
+                },
+                "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+                "rightValue": "janta",
+                "id": "condition-1772026938595-2oyznsgh1"
+              },
+              {
+                "operator": {
+                  "type": "string",
+                  "operation": "contains"
+                },
+                "leftValue": "={{ $json.userMessage.toLowerCase() }}",
+                "rightValue": "lanche",
+                "id": "condition-1772026938596-w8ce0mvtr"
+              }
+            ]
+          }
+        },
+        "id": "node-is-food-photo",
+        "name": "Is Food Photo?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          928,
+          912
+        ]
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "options": {}
+        },
+        "id": "node-read-memory-img-food",
+        "name": "Read Memory Img Food",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          1152,
+          800
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const memoryRows = $('Read Memory Img Food').all().map(i => i.json);\nconst userMessage = $('Prepare Image').item.json.userMessage;\nconst chatId = $('Prepare Image').item.json.chatId;\n\nconst sorted = memoryRows\n  .filter(r => r.timestamp)\n  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))\n  .slice(0, 10)\n  .reverse();\n\nconst messages = sorted.map(r => ({\n  role: r.role || 'user',\n  content: String(r.content || '')\n}));\n\nmessages.push({\n  role: 'user',\n  content: [\n    { type: 'image', source: { type: 'base64', media_type: $('Prepare Image').item.json.imageMimeType, data: $('Prepare Image').item.json.imageBase64 } },\n    { type: 'text', text: userMessage }\n  ]\n});\n\nreturn [{ json: { messages, userMessage, chatId, imageBase64: $('Prepare Image').item.json.imageBase64, imageMimeType: $('Prepare Image').item.json.imageMimeType } }];"
+        },
+        "id": "node-build-msgs-img-food",
+        "name": "Build Msgs Img Food",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1360,
+          800
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.anthropic.com/v1/messages",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "anthropicApi",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "anthropic-version",
+                "value": "2023-06-01"
+              },
+              {
+                "name": "content-type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ (function() {\n  const msgs = $json.messages.map(m => JSON.stringify(m)).join(',');\n  return '{\"model\": \"claude-sonnet-4-6\", \"max_tokens\": 2048, \"system\": \"You are a nutrition tracking assistant for Your Name. Your job is to parse food log messages and calculate nutritional information.\\n\\nToday's date: {{ new Date().toISOString().split('T')[0] }}\\n\\n## Instructions\\n- Parse the food items from the user's message\\n- The format is usually: \\\"log meal_type: weight item, weight item, ...\\\" but be flexible\\n- If meal_type is not specified, infer from the time or default to \\\"snack\\\"\\n- Calculate calories, protein, carbs, fat per item using USDA nutritional data per 100g\\n- Use chat history for context (e.g. \\\"same as yesterday\\\", \\\"also add 100g broccoli\\\")\\n- For image-based food logs: read nutrition labels, identify foods, estimate portions\\n\\n## Response format\\nReturn ONLY valid JSON, no markdown, no backticks:\\n{\\n  \\\"meal_type\\\": \\\"lunch\\\",\\n  \\\"items\\\": [\\n    {\\\"item\\\": \\\"chicken breast\\\", \\\"weight_g\\\": 200, \\\"calories\\\": 330, \\\"protein_g\\\": 62, \\\"carbs_g\\\": 0, \\\"fat_g\\\": 7.2}\\n  ],\\n  \\\"summary\\\": \\\"Lunch logged \\u2014 530 cal | P: 67g | C: 38g | F: 9g\\\"\\n}\", \"messages\": [' + msgs + ']}';\n})() }}",
+          "options": {}
+        },
+        "id": "node-claude-img-food",
+        "name": "Claude Image Food",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1584,
+          800
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "YftLcLuY7oj1yCrv",
+            "name": "Header Auth account"
+          },
+          "anthropicApi": {
+            "id": "ZDET7VGt2ObFDWsT",
+            "name": "Anthropic account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const responseText = $json.content[0].text;\nlet parsed;\ntry {\n  const jsonMatch = responseText.match(/\\{[\\s\\S]*\\}/);\n  parsed = JSON.parse(jsonMatch ? jsonMatch[0] : responseText);\n} catch(e) {\n  parsed = { meal_type: 'unknown', items: [], summary: 'Failed to parse food data: ' + responseText.substring(0, 200) };\n}\n\nconst today = new Date().toISOString().split('T')[0];\n\nconst items = (parsed.items || []).map(item => ({\n  json: {\n    date: today,\n    meal_type: parsed.meal_type || 'snack',\n    item: item.item,\n    weight_g: item.weight_g || 0,\n    calories: item.calories || 0,\n    protein_g: item.protein_g || 0,\n    carbs_g: item.carbs_g || 0,\n    fat_g: item.fat_g || 0,\n    source: 'telegram'\n  }\n}));\n\nif (items.length === 0) {\n  items.push({ json: { date: today, meal_type: 'unknown', item: 'parse_error', weight_g: 0, calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, source: 'telegram' } });\n}\n\nitems[0].json._summary = parsed.summary || 'Food logged';\nitems[0].json._fullResponse = responseText;\n\nreturn items;"
+        },
+        "id": "node-parse-img-food",
+        "name": "Parse Img Food Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1808,
+          800
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "meals"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "schemaType": "manual",
+              "values": [
+                {
+                  "id": "imf1",
+                  "name": "date",
+                  "type": "stringValue",
+                  "value": "={{ $json.date }}"
+                },
+                {
+                  "id": "imf2",
+                  "name": "meal_type",
+                  "type": "stringValue",
+                  "value": "={{ $json.meal_type }}"
+                },
+                {
+                  "id": "imf3",
+                  "name": "item",
+                  "type": "stringValue",
+                  "value": "={{ $json.item }}"
+                },
+                {
+                  "id": "imf4",
+                  "name": "weight_g",
+                  "type": "numberValue",
+                  "value": "={{ $json.weight_g }}"
+                },
+                {
+                  "id": "imf5",
+                  "name": "calories",
+                  "type": "numberValue",
+                  "value": "={{ $json.calories }}"
+                },
+                {
+                  "id": "imf6",
+                  "name": "protein_g",
+                  "type": "numberValue",
+                  "value": "={{ $json.protein_g }}"
+                },
+                {
+                  "id": "imf7",
+                  "name": "carbs_g",
+                  "type": "numberValue",
+                  "value": "={{ $json.carbs_g }}"
+                },
+                {
+                  "id": "imf8",
+                  "name": "fat_g",
+                  "type": "numberValue",
+                  "value": "={{ $json.fat_g }}"
+                },
+                {
+                  "id": "imf9",
+                  "name": "source",
+                  "type": "stringValue",
+                  "value": "={{ $json.source }}"
+                }
+              ]
+            }
+          },
+          "options": {}
+        },
+        "id": "node-write-img-food",
+        "name": "Write Img Food Items",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          2032,
+          800
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "schemaType": "manual",
+              "values": [
+                {
+                  "id": "ifu1",
+                  "name": "timestamp",
+                  "type": "stringValue",
+                  "value": "={{ new Date().toISOString() }}"
+                },
+                {
+                  "id": "ifu2",
+                  "name": "chat_id",
+                  "type": "stringValue",
+                  "value": "={{ $('Prepare Image').item.json.chatId }}"
+                },
+                {
+                  "id": "ifu3",
+                  "name": "role",
+                  "type": "stringValue",
+                  "value": "user"
+                },
+                {
+                  "id": "ifu4",
+                  "name": "content",
+                  "type": "stringValue",
+                  "value": "={{ $('Prepare Image').item.json.userMessage }} [photo]"
+                }
+              ]
+            }
+          },
+          "options": {}
+        },
+        "id": "node-save-img-food-user",
+        "name": "Save Img Food User Msg",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          2240,
+          800
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "schemaType": "manual",
+              "values": [
+                {
+                  "id": "ifa1",
+                  "name": "timestamp",
+                  "type": "stringValue",
+                  "value": "={{ new Date().toISOString() }}"
+                },
+                {
+                  "id": "ifa2",
+                  "name": "chat_id",
+                  "type": "stringValue",
+                  "value": "={{ $('Prepare Image').item.json.chatId }}"
+                },
+                {
+                  "id": "ifa3",
+                  "name": "role",
+                  "type": "stringValue",
+                  "value": "assistant"
+                },
+                {
+                  "id": "ifa4",
+                  "name": "content",
+                  "type": "stringValue",
+                  "value": "={{ $('Parse Img Food Response').first().json._summary }}"
+                }
+              ]
+            }
+          },
+          "options": {}
+        },
+        "id": "node-save-img-food-asst",
+        "name": "Save Img Food Asst Msg",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          2464,
+          800
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $('Prepare Image').item.json.chatId }}",
+          "text": "={{ $('Parse Img Food Response').first().json._summary }}",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "id": "node-reply-img-food",
+        "name": "Reply Img Food",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          2688,
+          800
+        ],
+        "webhookId": "80395b4f-37cf-470b-a3f4-13b5ecd6b05f",
+        "credentials": {
+          "telegramApi": {
+            "id": "A5mb1Ts6wYCACmrr",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "options": {}
+        },
+        "id": "node-read-memory-image",
+        "name": "Read Memory Image",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          1152,
+          1056
+        ],
+        "alwaysOutputData": true,
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const memoryRows = $('Read Memory Image').all().map(i => i.json);\nconst userMessage = $('Prepare Image').item.json.userMessage;\nconst chatId = $('Prepare Image').item.json.chatId;\nconst imageBase64 = $('Prepare Image').item.json.imageBase64;\nconst imageMimeType = $('Prepare Image').item.json.imageMimeType;\n\nconst sorted = memoryRows\n  .filter(r => r.timestamp)\n  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))\n  .slice(0, 10)\n  .reverse();\n\nconst messages = sorted.map(r => ({\n  role: r.role || 'user',\n  content: String(r.content || '')\n}));\n\nmessages.push({\n  role: 'user',\n  content: [\n    { type: 'image', source: { type: 'base64', media_type: imageMimeType, data: imageBase64 } },\n    { type: 'text', text: userMessage }\n  ]\n});\n\nconst today = new Date().toISOString().split('T')[0];\n\nconst requestBody = {\n  model: 'claude-sonnet-4-6',\n  max_tokens: 2048,\n  system: 'You are Your Name\\'s personal AI assistant \u2014 her second brain \u2014 available on Telegram.\\n\\nToday\\'s date: ' + today + '\\n\\nWho Your Name is: Brazilian, 33, based in Berlin. Married Kay in Dec 2025. Economics background. 10+ years GTM ops and RevOps.\\n\\nHow to respond:\\n- Direct, no fluff, casual tone, match her energy\\n- Complete solutions, never partial snippets\\n- Same language she writes in (English or Portuguese)\\n- If venting, help think through it practically\\n- Honesty over being spared the reality',\n  messages\n};\n\nreturn [{ json: { requestBody: JSON.stringify(requestBody), userMessage, chatId, imageBase64, imageMimeType } }];"
+        },
+        "id": "node-build-msgs-image",
+        "name": "Build Messages Image",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1360,
+          1056
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.anthropic.com/v1/messages",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "anthropicApi",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "anthropic-version",
+                "value": "2023-06-01"
+              },
+              {
+                "name": "content-type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ $json.requestBody }}"
+        },
+        "id": "node-claude-image",
+        "name": "Claude Image",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1584,
+          1056
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "YftLcLuY7oj1yCrv",
+            "name": "Header Auth account"
+          },
+          "anthropicApi": {
+            "id": "ZDET7VGt2ObFDWsT",
+            "name": "Anthropic account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "schemaType": "manual",
+              "values": [
+                {
+                  "id": "iu1",
+                  "name": "timestamp",
+                  "type": "stringValue",
+                  "value": "={{ new Date().toISOString() }}"
+                },
+                {
+                  "id": "iu2",
+                  "name": "chat_id",
+                  "type": "stringValue",
+                  "value": "={{ $('Prepare Image').item.json.chatId }}"
+                },
+                {
+                  "id": "iu3",
+                  "name": "role",
+                  "type": "stringValue",
+                  "value": "user"
+                },
+                {
+                  "id": "iu4",
+                  "name": "content",
+                  "type": "stringValue",
+                  "value": "={{ $('Prepare Image').item.json.userMessage }} [photo]"
+                }
+              ]
+            }
+          },
+          "options": {}
+        },
+        "id": "node-save-user-image",
+        "name": "Save User Msg Image",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          1808,
+          1056
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "chat_memory"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "schemaType": "manual",
+              "values": [
+                {
+                  "id": "ia1",
+                  "name": "timestamp",
+                  "type": "stringValue",
+                  "value": "={{ new Date().toISOString() }}"
+                },
+                {
+                  "id": "ia2",
+                  "name": "chat_id",
+                  "type": "stringValue",
+                  "value": "={{ $('Prepare Image').item.json.chatId }}"
+                },
+                {
+                  "id": "ia3",
+                  "name": "role",
+                  "type": "stringValue",
+                  "value": "assistant"
+                },
+                {
+                  "id": "ia4",
+                  "name": "content",
+                  "type": "stringValue",
+                  "value": "={{ $('Claude Image').item.json.content[0].text }}"
+                }
+              ]
+            }
+          },
+          "options": {}
+        },
+        "id": "node-save-asst-image",
+        "name": "Save Asst Msg Image",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          2032,
+          1056
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $('Prepare Image').item.json.chatId }}",
+          "text": "={{ $('Claude Image').item.json.content[0].text }}",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "id": "node-reply-image",
+        "name": "Reply Image",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          2240,
+          1056
+        ],
+        "webhookId": "d2c0bb28-6070-4b3a-a269-2cdf2c7e98ab",
+        "credentials": {
+          "telegramApi": {
+            "id": "A5mb1Ts6wYCACmrr",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $json.message.chat.id }}",
+          "text": "So consigo processar texto, voz e imagens. / I can only handle text, voice and images.",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "id": "node-unsupported",
+        "name": "Unsupported Type",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          480,
+          1312
+        ],
+        "webhookId": "3864341d-9240-4334-bb38-e6078c4262ab",
+        "credentials": {
+          "telegramApi": {
+            "id": "A5mb1Ts6wYCACmrr",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "triggerAtHour": 8
+              }
+            ]
+          }
+        },
+        "id": "node-weekly-trigger",
+        "name": "Weekly Trigger",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          0,
+          1600
+        ]
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "meals"
+          },
+          "options": {}
+        },
+        "id": "node-read-meals-weekly",
+        "name": "Read All Meals",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          240,
+          1600
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const allMeals = $('Read All Meals').all().map(i => i.json);\nconst now = new Date();\nconst sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\nconst sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];\n\nconst recentMeals = allMeals.filter(m => m.date && m.date >= sevenDaysAgoStr);\n\nif (recentMeals.length === 0) {\n  return [{ json: { hasMeals: false, prompt: 'No meals logged in the past 7 days.' } }];\n}\n\nlet mealText = 'Here are my meals from the past 7 days:\\n\\n';\nconst byDate = {};\nfor (const m of recentMeals) {\n  if (!byDate[m.date]) byDate[m.date] = [];\n  byDate[m.date].push(m);\n}\n\nfor (const date of Object.keys(byDate).sort()) {\n  mealText += date + ':\\n';\n  for (const m of byDate[date]) {\n    mealText += '  ' + (m.meal_type || '?') + ': ' + (m.item || '?') + ' ' + (m.weight_g || 0) + 'g \u2014 ' + (m.calories || 0) + ' cal, P:' + (m.protein_g || 0) + 'g C:' + (m.carbs_g || 0) + 'g F:' + (m.fat_g || 0) + 'g\\n';\n  }\n  mealText += '\\n';\n}\n\nmealText += 'Please generate my weekly nutrition summary.';\n\nreturn [{ json: { hasMeals: true, prompt: mealText, mealCount: recentMeals.length } }];"
+        },
+        "id": "node-filter-weekly",
+        "name": "Filter Last 7 Days",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          480,
+          1600
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 2,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict",
+              "rightValue": ""
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                },
+                "leftValue": "={{ $json.hasMeals }}",
+                "id": "condition-1772026938596-cgvro12qf"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "node-if-has-meals",
+        "name": "Has Meals?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          704,
+          1600
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.anthropic.com/v1/messages",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "anthropicApi",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "anthropic-version",
+                "value": "2023-06-01"
+              },
+              {
+                "name": "content-type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ (function() { const prompt = $json.prompt.replace(/\\\"/g, '\\\\\"').replace(/\\n/g, '\\\\n'); return '{\"model\": \"claude-sonnet-4-6\", \"max_tokens\": 4096, \"system\": \"You are Your Name's nutrition coach AI. Analyze the meal data from the past week and generate a weekly summary.\\n\\n## Instructions\\n- Calculate daily averages for calories, protein, carbs, fat\\n- Identify top foods by frequency and caloric contribution\\n- Show macro split percentages (protein/carbs/fat as % of total calories)\\n- Give 2-3 actionable behavioral tips based on patterns you see\\n- Keep it direct, no fluff\\n- Format nicely for Telegram (use bold for headers)\\n\\nToday's date: {{ new Date().toISOString().split('T')[0] }}\", \"messages\": [{\"role\": \"user\", \"content\": \"' + prompt + '\"}]}'; })() }}",
+          "options": {}
+        },
+        "id": "node-claude-weekly",
+        "name": "Claude Weekly Summary",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          928,
+          1600
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "YftLcLuY7oj1yCrv",
+            "name": "Header Auth account"
+          },
+          "anthropicApi": {
+            "id": "ZDET7VGt2ObFDWsT",
+            "name": "Anthropic account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "mode": "id",
+            "value": "1JUEUeSedYaFF0DBRSOCE_w4qrinllCXuL6uGqRWXp78"
+          },
+          "sheetName": {
+            "mode": "name",
+            "value": "weekly_summary"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "schemaType": "manual",
+              "values": [
+                {
+                  "id": "ws1",
+                  "name": "week_ending",
+                  "type": "stringValue",
+                  "value": "={{ new Date().toISOString().split('T')[0] }}"
+                },
+                {
+                  "id": "ws2",
+                  "name": "summary",
+                  "type": "stringValue",
+                  "value": "={{ $json.content[0].text }}"
+                },
+                {
+                  "id": "ws3",
+                  "name": "meal_count",
+                  "type": "numberValue",
+                  "value": "={{ $('Filter Last 7 Days').item.json.mealCount }}"
+                }
+              ]
+            }
+          },
+          "options": {}
+        },
+        "id": "node-save-weekly",
+        "name": "Save Weekly Summary",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          1152,
+          1600
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "nlewB0oiappOoNCx",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "chatId": "1984567776",
+          "text": "={{ $('Claude Weekly Summary').item.json.content[0].text }}",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "id": "node-send-weekly",
+        "name": "Send Weekly Summary",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1360,
+          1600
+        ],
+        "webhookId": "47bec873-f077-4e27-a628-6b4b27f1da57",
+        "credentials": {
+          "telegramApi": {
+            "id": "A5mb1Ts6wYCACmrr",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "chatId": "1984567776",
+          "text": "No meals logged this week. Start tracking with 'log breakfast: 200g oatmeal, 1 banana' or send a food photo with 'log' in the caption.",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "id": "node-no-meals",
+        "name": "No Meals Nudge",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          928,
+          1808
+        ],
+        "webhookId": "005dc3a1-0a20-46e2-9b28-e2397075fb77",
+        "credentials": {
+          "telegramApi": {
+            "id": "A5mb1Ts6wYCACmrr",
+            "name": "Telegram account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Telegram Trigger": {
+        "main": [
+          [
+            {
+              "node": "Verify Message Type",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Verify Message Type": {
+        "main": [
+          [
+            {
+              "node": "Set Text",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Get Voice File",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Get Image File",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Unsupported Type",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Set Text": {
+        "main": [
+          [
+            {
+              "node": "Is Food Log?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Food Log?": {
+        "main": [
+          [
+            {
+              "node": "Read Memory Food",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Read Memory Text",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read Memory Food": {
+        "main": [
+          [
+            {
+              "node": "Build Messages Food",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Messages Food": {
+        "main": [
+          [
+            {
+              "node": "Claude Food Parse",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Claude Food Parse": {
+        "main": [
+          [
+            {
+              "node": "Parse Food Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parse Food Response": {
+        "main": [
+          [
+            {
+              "node": "Write Food Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Write Food Items": {
+        "main": [
+          [
+            {
+              "node": "Save Food User Msg",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save Food User Msg": {
+        "main": [
+          [
+            {
+              "node": "Save Food Asst Msg",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save Food Asst Msg": {
+        "main": [
+          [
+            {
+              "node": "Reply Food",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read Memory Text": {
+        "main": [
+          [
+            {
+              "node": "Build Messages Text",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Messages Text": {
+        "main": [
+          [
+            {
+              "node": "Claude Text",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Claude Text": {
+        "main": [
+          [
+            {
+              "node": "Save User Msg Text",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save User Msg Text": {
+        "main": [
+          [
+            {
+              "node": "Save Asst Msg Text",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save Asst Msg Text": {
+        "main": [
+          [
+            {
+              "node": "Reply Text",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Voice File": {
+        "main": [
+          [
+            {
+              "node": "Whisper Transcribe",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Whisper Transcribe": {
+        "main": [
+          [
+            {
+              "node": "Set Voice Text",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Set Voice Text": {
+        "main": [
+          [
+            {
+              "node": "Read Memory Voice",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read Memory Voice": {
+        "main": [
+          [
+            {
+              "node": "Build Messages Voice",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Messages Voice": {
+        "main": [
+          [
+            {
+              "node": "Claude Voice",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Claude Voice": {
+        "main": [
+          [
+            {
+              "node": "Save User Msg Voice",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save User Msg Voice": {
+        "main": [
+          [
+            {
+              "node": "Save Asst Msg Voice",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save Asst Msg Voice": {
+        "main": [
+          [
+            {
+              "node": "Reply Voice",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Image File": {
+        "main": [
+          [
+            {
+              "node": "Prepare Image",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Image": {
+        "main": [
+          [
+            {
+              "node": "Is Food Photo?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Food Photo?": {
+        "main": [
+          [
+            {
+              "node": "Read Memory Img Food",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Read Memory Image",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read Memory Img Food": {
+        "main": [
+          [
+            {
+              "node": "Build Msgs Img Food",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Msgs Img Food": {
+        "main": [
+          [
+            {
+              "node": "Claude Image Food",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Claude Image Food": {
+        "main": [
+          [
+            {
+              "node": "Parse Img Food Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parse Img Food Response": {
+        "main": [
+          [
+            {
+              "node": "Write Img Food Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Write Img Food Items": {
+        "main": [
+          [
+            {
+              "node": "Save Img Food User Msg",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save Img Food User Msg": {
+        "main": [
+          [
+            {
+              "node": "Save Img Food Asst Msg",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save Img Food Asst Msg": {
+        "main": [
+          [
+            {
+              "node": "Reply Img Food",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read Memory Image": {
+        "main": [
+          [
+            {
+              "node": "Build Messages Image",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Messages Image": {
+        "main": [
+          [
+            {
+              "node": "Claude Image",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Claude Image": {
+        "main": [
+          [
+            {
+              "node": "Save User Msg Image",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save User Msg Image": {
+        "main": [
+          [
+            {
+              "node": "Save Asst Msg Image",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save Asst Msg Image": {
+        "main": [
+          [
+            {
+              "node": "Reply Image",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Weekly Trigger": {
+        "main": [
+          [
+            {
+              "node": "Read All Meals",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read All Meals": {
+        "main": [
+          [
+            {
+              "node": "Filter Last 7 Days",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Filter Last 7 Days": {
+        "main": [
+          [
+            {
+              "node": "Has Meals?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Has Meals?": {
+        "main": [
+          [
+            {
+              "node": "Claude Weekly Summary",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "No Meals Nudge",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Claude Weekly Summary": {
+        "main": [
+          [
+            {
+              "node": "Save Weekly Summary",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save Weekly Summary": {
+        "main": [
+          [
+            {
+              "node": "Send Weekly Summary",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Your Name",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-25T13:42:19.308Z",
+        "id": 134,
+        "workflowId": "Fq6xyoiSzqPGDVqK",
+        "versionId": "b03c4891-3c3e-4d28-ad31-25919ea92d30",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      },
+      {
+        "createdAt": "2026-02-25T13:42:25.923Z",
+        "id": 136,
+        "workflowId": "Fq6xyoiSzqPGDVqK",
+        "versionId": "b03c4891-3c3e-4d28-ad31-25919ea92d30",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      },
+      {
+        "createdAt": "2026-02-25T13:42:19.134Z",
+        "id": 133,
+        "workflowId": "Fq6xyoiSzqPGDVqK",
+        "versionId": "b03c4891-3c3e-4d28-ad31-25919ea92d30",
+        "event": "deactivated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      },
+      {
+        "createdAt": "2026-02-25T13:42:25.594Z",
+        "id": 135,
+        "workflowId": "Fq6xyoiSzqPGDVqK",
+        "versionId": "b03c4891-3c3e-4d28-ad31-25919ea92d30",
+        "event": "deactivated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    ]
+  }
+}

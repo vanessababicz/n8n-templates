@@ -1,0 +1,1367 @@
+{
+  "updatedAt": "2026-02-23T15:53:29.261Z",
+  "createdAt": "2026-02-18T08:56:11.487Z",
+  "id": "lNJtiE7__TLqhRX9McPtw",
+  "name": "YourCompany: HubSpot Line Item Description Updater",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hubspot",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        192
+      ],
+      "id": "e126b0b2-f856-4077-affb-56a23a0c7dd1",
+      "name": "Webhook",
+      "webhookId": "f291c5a8-e745-40ff-b2f1-ff262f5cedd8"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hubapi.com/crm/v3/objects/line_items/{{ $json.objectId }}?properties=name,description,framework",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9dbb8efe-016f-43d8-a236-7620a3d0baa3",
+      "name": "Get Line Item Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        672,
+        96
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YftLcLuY7oj1yCrv",
+          "name": "Header Auth account"
+        },
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "description-assignment",
+              "name": "=newDescription",
+              "value": "={{ $json.properties.description }}",
+              "type": "string"
+            },
+            {
+              "id": "line-item-id",
+              "name": "lineItemId",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b71de5b2-5c3e-464f-b710-b0e171530721",
+      "name": "Format Description",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1344,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/line_items/{{ $json.lineItemId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "properties",
+              "value": "={{ { \"description\": $json.newDescription } }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ea62272e-8647-4b5d-aba8-7f71994f9213",
+      "name": "Update Line Item Description",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1568,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YftLcLuY7oj1yCrv",
+          "name": "Header Auth account"
+        },
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Get the current description and framework value\nlet description = $input.item.json.properties.description || '';\nlet frameworkValue = $input.item.json.properties.framework || '';\n\n// Remove any existing \"Framework: ...\" or \"Frameworks: ...\" line (at beginning or end)\ndescription = description.replace(/^Frameworks?:.*\\n?/m, '');\ndescription = description.replace(/\\nFrameworks?:.*$/m, '');\n\n// Parse frameworks (semicolon-separated)\nlet frameworks = frameworkValue.split(';').map(f => f.trim()).filter(f => f);\n\n// Format frameworks based on count\nlet frameworkText = '';\nif (frameworks.length === 0) {\n  frameworkText = '';\n} else if (frameworks.length === 1) {\n  frameworkText = `Framework: ${frameworks[0]}\\n`;\n} else if (frameworks.length === 2) {\n  frameworkText = `Frameworks: ${frameworks[0]} and ${frameworks[1]}\\n`;\n} else {\n  // 3 or more: \"A, B, C and D\"\n  let lastFramework = frameworks.pop();\n  frameworkText = `Frameworks: ${frameworks.join(', ')} and ${lastFramework}\\n`;\n}\n\n// Return framework line at the top + cleaned description\nreturn {\n  json: {\n    ...$input.item.json,\n    properties: {\n      ...$input.item.json.properties,\n      description: frameworkText + description\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "7702f02c-6d41-4074-97bf-72b9c622fc72",
+      "name": "Clear description if framework is already present"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ff335e48-4803-432e-972e-a0b8136b80c1",
+              "leftValue": "={{ $json.properties.framework }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        896,
+        96
+      ],
+      "id": "469d1c9f-5038-4d26-a41f-630cd98e56ca",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Get the current description\nlet description = $input.item.json.properties.description || '';\n\n// Remove any existing \"\\nFramework: ...\" line\ndescription = description.replace(/\\nFramework:.*$/m, '');\n\n// Return cleaned description\nreturn {\n  json: {\n    ...$input.item.json,\n    properties: {\n      ...$input.item.json.properties,\n      description: description\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        192
+      ],
+      "id": "0e2b0351-39fa-443d-aaf6-e9e8260ebeb1",
+      "name": "Clear description if framework is already present1"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/line_items/{{ $json.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "properties",
+              "value": "={{ $json.properties.description }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "805949c1-0708-41c6-9dd3-b7358cd563de",
+      "name": "Remove Framework from Line Item Description",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1344,
+        192
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YftLcLuY7oj1yCrv",
+          "name": "Header Auth account"
+        },
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "body",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        448,
+        96
+      ],
+      "id": "dff92b5d-f543-45e8-a9ca-23bed6650f70",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body[0].subscriptionId }}",
+                    "rightValue": 5523378,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "fdcd7527-52ff-41ac-9cdd-5410d9f47817"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Line items added"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b0b1a83e-c722-41dc-a023-c19ee3fe9bc9",
+                    "leftValue": "={{ $json.body[0].subscriptionId }}",
+                    "rightValue": 5525469,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Proposal live"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        192
+      ],
+      "id": "b68d0fa8-3bba-475e-a638-1a9b3f31e57b",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=YourCompany and {{ $('Get a deal').first().json.properties.dealname.value }} Engagement",
+        "bodyContent": "=Hi {{ $json.contactToName }},<br><br>\n\nGreat speaking to you today. Here's the <a href=\"{{ $('Webhook').first().json.body[0].propertyValue }}\" style=\"color: #0066cc; text-decoration: underline;\">engagement proposal</a> for you to review and sign and here's more details about <a href=\"https://view.genially.com/69451f406a056f5581511dc3/presentation-pricing-packages\" style=\"color: #0066cc; text-decoration: underline;\">our services and prices</a>.<br><br>\n\nOnce the proposal is signed, we'll introduce you to the team who'll be working with you so you can arrange the kick off call.<br><br>\n\nLooking forward to working with you.<br><br>\n\nBest,<br><br>\n\n[YOUR-EMAIL-SIGNATURE-HTML]",
+        "additionalFields": {
+          "ccRecipients": "={{ $json.contactCc && $json.contactCc.length > 0 ? [...$json.contactCc, 'team@company.com'].join(', ') : 'team@company.com' }}",
+          "bodyContentType": "html",
+          "toRecipients": "={{ $json.contactToEmail }}"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        416
+      ],
+      "id": "4a285d69-7e06-4fd6-b432-36f9e256a75a",
+      "name": "Create a draft",
+      "webhookId": "12a2c702-64a2-460a-b376-1f9f9ce95501",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "azOFMTypy2ecR4Sk",
+          "name": "Your Name's Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "deal",
+        "operation": "get",
+        "dealId": {
+          "__rl": true,
+          "value": "={{ $json.body[0].objectId }}",
+          "mode": "id"
+        },
+        "filters": {
+          "propertiesCollection": {
+            "propertiesValues": {
+              "properties": [
+                "dealname"
+              ],
+              "propertyMode": "valueOnly"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        512,
+        416
+      ],
+      "id": "54f618db-5833-42db-a338-98b2fc6a6440",
+      "name": "Get a deal",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "associations.associatedVids",
+        "options": {
+          "destinationFieldName": "Contacts"
+        }
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        720,
+        416
+      ],
+      "id": "ab15ff3f-edf8-4288-b124-9b8a6d3bdf67",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "operation": "get",
+        "contactId": {
+          "__rl": true,
+          "value": "={{ $json.Contacts }}",
+          "mode": "id"
+        },
+        "additionalFields": {
+          "propertiesCollection": {
+            "propertiesValues": {
+              "properties": [
+                "email",
+                "firstname"
+              ],
+              "propertyMode": "valueOnly"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        944,
+        416
+      ],
+      "id": "ce0d10a4-5810-4a6d-ab8f-8e84570d054d",
+      "name": "Get a contact",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "o2pa5Db1D4AtpOKX",
+          "name": "YourCompany HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get contact data from input\nconst contacts = $input.all();\n\n// Initialize result object\nconst result = {\n  contactToName: '',\n  contactToEmail: '',\n  contactCc: []\n};\n\n// Check if we have any contacts\nif (contacts.length > 0) {\n  // First contact becomes \"To\"\n  const firstContact = contacts[0].json;\n  \n  // Get first name only\n  const firstName = firstContact.properties.firstname?.value || '';\n  \n  result.contactToName = firstName;\n  \n  // If no first name available, use email as name\n  if (!result.contactToName) {\n    result.contactToName = firstContact.properties.email?.value || '';\n  }\n  \n  result.contactToEmail = firstContact.properties.email?.value || '';\n  \n  // Rest of contacts become CC (email only)\n  for (let i = 1; i < contacts.length; i++) {\n    const email = contacts[i].json.properties.email?.value;\n    if (email) {\n      result.contactCc.push(email);\n    }\n  }\n}\n\nreturn { json: result };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        416
+      ],
+      "id": "21c0a1ee-8851-4b19-816c-952aff6a7b52",
+      "name": "Extract to and cc contacts"
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U09NRRBRS1K",
+          "mode": "list",
+          "cachedResultName": "vanessa.babicz"
+        },
+        "text": "=Draft ready to send for {{ $('Get a deal').first().json.properties.dealname.value }}\n\n<https://outlook.cloud.microsoft/mail/compose/{{ encodeURIComponent($json.id) }}|View draft>",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1584,
+        416
+      ],
+      "id": "87a45117-8c00-427c-8ff1-0e65802f4321",
+      "name": "Send a message",
+      "webhookId": "05aadf45-8d6c-484c-8efc-e1cb4ba65e75",
+      "credentials": {
+        "slackApi": {
+          "id": "61VGzOLxOe1JTzvl",
+          "name": "YourCompany API Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Line Item Details": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Description": {
+      "main": [
+        [
+          {
+            "node": "Update Line Item Description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear description if framework is already present": {
+      "main": [
+        [
+          {
+            "node": "Format Description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Clear description if framework is already present",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Clear description if framework is already present1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear description if framework is already present1": {
+      "main": [
+        [
+          {
+            "node": "Remove Framework from Line Item Description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Get Line Item Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a deal": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Get a contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a contact": {
+      "main": [
+        [
+          {
+            "node": "Extract to and cc contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract to and cc contacts": {
+      "main": [
+        [
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a draft": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "[your-n8n-domain]",
+            "user-agent": "HubSpot Connect 2.0 (http://dev.hubspot.com/) (namespace: webhooks-nio-http-client) - WebhooksExecutorDaemon-executor",
+            "content-length": "331",
+            "accept": "*/*",
+            "content-type": "application/json",
+            "via": "1.1 Caddy",
+            "x-forwarded-for": "54.174.62.179",
+            "x-forwarded-host": "[your-n8n-domain]",
+            "x-forwarded-proto": "https",
+            "x-hubspot-request-timestamp": "1771431360690",
+            "x-hubspot-signature": "03c3a0b9e20cc1ab5a1167ccf263011e54262ceb60b62d3dc360c2de3939a16f",
+            "x-hubspot-signature-v3": "JoEcsSYNI9P8nKlacFjG/4uZLRdbAfS8Y+zeOpo1Irk=",
+            "x-hubspot-signature-version": "v1",
+            "x-hubspot-timeout-millis": "10000",
+            "accept-encoding": "gzip"
+          },
+          "params": {},
+          "query": {},
+          "body": [
+            {
+              "eventId": 1249744471,
+              "subscriptionId": 5525469,
+              "portalId": 0,
+              "appId": 23909242,
+              "occurredAt": 1771431360259,
+              "subscriptionType": "deal.propertyChange",
+              "attemptNumber": 0,
+              "objectId": 55459393376,
+              "propertyName": "qwilr_proposal",
+              "propertyValue": "https://yourcompany.qwilr.com/UbFDV39Qk63C",
+              "changeSource": "INTEGRATION",
+              "sourceId": "52964"
+            }
+          ],
+          "webhookUrl": "https://[your-n8n-domain]/webhook/hubspot",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "versionId": "569b9da7-d571-4168-b14c-1f3fec911107",
+  "activeVersionId": "569b9da7-d571-4168-b14c-1f3fec911107",
+  "versionCounter": 268,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-18T08:56:11.497Z",
+      "createdAt": "2026-02-18T08:56:11.497Z",
+      "role": "workflow:owner",
+      "workflowId": "lNJtiE7__TLqhRX9McPtw",
+      "projectId": "1xouAt4QdWWhUWuM",
+      "project": {
+        "updatedAt": "2025-10-13T14:48:28.241Z",
+        "createdAt": "2025-10-13T14:47:21.362Z",
+        "id": "1xouAt4QdWWhUWuM",
+        "name": "Your Name <your-email@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-18T16:19:48.000Z",
+    "createdAt": "2026-02-18T15:12:09.429Z",
+    "versionId": "569b9da7-d571-4168-b14c-1f3fec911107",
+    "workflowId": "lNJtiE7__TLqhRX9McPtw",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "hubspot",
+          "responseMode": "lastNode",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          0,
+          192
+        ],
+        "id": "e126b0b2-f856-4077-affb-56a23a0c7dd1",
+        "name": "Webhook",
+        "webhookId": "f291c5a8-e745-40ff-b2f1-ff262f5cedd8"
+      },
+      {
+        "parameters": {
+          "url": "=https://api.hubapi.com/crm/v3/objects/line_items/{{ $json.objectId }}?properties=name,description,framework",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "hubspotAppToken",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "9dbb8efe-016f-43d8-a236-7620a3d0baa3",
+        "name": "Get Line Item Details",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1,
+        "position": [
+          672,
+          96
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "YftLcLuY7oj1yCrv",
+            "name": "Header Auth account"
+          },
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "description-assignment",
+                "name": "=newDescription",
+                "value": "={{ $json.properties.description }}",
+                "type": "string"
+              },
+              {
+                "id": "line-item-id",
+                "name": "lineItemId",
+                "value": "={{ $json.id }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "b71de5b2-5c3e-464f-b710-b0e171530721",
+        "name": "Format Description",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.3,
+        "position": [
+          1344,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "method": "PATCH",
+          "url": "=https://api.hubapi.com/crm/v3/objects/line_items/{{ $json.lineItemId }}",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "hubspotAppToken",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "properties",
+                "value": "={{ { \"description\": $json.newDescription } }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "ea62272e-8647-4b5d-aba8-7f71994f9213",
+        "name": "Update Line Item Description",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1,
+        "position": [
+          1568,
+          0
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "YftLcLuY7oj1yCrv",
+            "name": "Header Auth account"
+          },
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "jsCode": "// Get the current description and framework value\nlet description = $input.item.json.properties.description || '';\nlet frameworkValue = $input.item.json.properties.framework || '';\n\n// Remove any existing \"Framework: ...\" or \"Frameworks: ...\" line (at beginning or end)\ndescription = description.replace(/^Frameworks?:.*\\n?/m, '');\ndescription = description.replace(/\\nFrameworks?:.*$/m, '');\n\n// Parse frameworks (semicolon-separated)\nlet frameworks = frameworkValue.split(';').map(f => f.trim()).filter(f => f);\n\n// Format frameworks based on count\nlet frameworkText = '';\nif (frameworks.length === 0) {\n  frameworkText = '';\n} else if (frameworks.length === 1) {\n  frameworkText = `Framework: ${frameworks[0]}\\n`;\n} else if (frameworks.length === 2) {\n  frameworkText = `Frameworks: ${frameworks[0]} and ${frameworks[1]}\\n`;\n} else {\n  // 3 or more: \"A, B, C and D\"\n  let lastFramework = frameworks.pop();\n  frameworkText = `Frameworks: ${frameworks.join(', ')} and ${lastFramework}\\n`;\n}\n\n// Return framework line at the top + cleaned description\nreturn {\n  json: {\n    ...$input.item.json,\n    properties: {\n      ...$input.item.json.properties,\n      description: frameworkText + description\n    }\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1120,
+          0
+        ],
+        "id": "7702f02c-6d41-4074-97bf-72b9c622fc72",
+        "name": "Clear description if framework is already present"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "ff335e48-4803-432e-972e-a0b8136b80c1",
+                "leftValue": "={{ $json.properties.framework }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEmpty",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          896,
+          96
+        ],
+        "id": "469d1c9f-5038-4d26-a41f-630cd98e56ca",
+        "name": "If"
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "jsCode": "// Get the current description\nlet description = $input.item.json.properties.description || '';\n\n// Remove any existing \"\\nFramework: ...\" line\ndescription = description.replace(/\\nFramework:.*$/m, '');\n\n// Return cleaned description\nreturn {\n  json: {\n    ...$input.item.json,\n    properties: {\n      ...$input.item.json.properties,\n      description: description\n    }\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1120,
+          192
+        ],
+        "id": "0e2b0351-39fa-443d-aaf6-e9e8260ebeb1",
+        "name": "Clear description if framework is already present1"
+      },
+      {
+        "parameters": {
+          "method": "PATCH",
+          "url": "=https://api.hubapi.com/crm/v3/objects/line_items/{{ $json.id }}",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "hubspotAppToken",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "properties",
+                "value": "={{ $json.properties.description }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "805949c1-0708-41c6-9dd3-b7358cd563de",
+        "name": "Remove Framework from Line Item Description",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1,
+        "position": [
+          1344,
+          192
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "YftLcLuY7oj1yCrv",
+            "name": "Header Auth account"
+          },
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "body",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          448,
+          96
+        ],
+        "id": "dff92b5d-f543-45e8-a9ca-23bed6650f70",
+        "name": "Split Out"
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.body[0].subscriptionId }}",
+                      "rightValue": 5523378,
+                      "operator": {
+                        "type": "number",
+                        "operation": "equals"
+                      },
+                      "id": "fdcd7527-52ff-41ac-9cdd-5410d9f47817"
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "Line items added"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "id": "b0b1a83e-c722-41dc-a023-c19ee3fe9bc9",
+                      "leftValue": "={{ $json.body[0].subscriptionId }}",
+                      "rightValue": 5525469,
+                      "operator": {
+                        "type": "number",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "Proposal live"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.4,
+        "position": [
+          224,
+          192
+        ],
+        "id": "b68d0fa8-3bba-475e-a638-1a9b3f31e57b",
+        "name": "Switch"
+      },
+      {
+        "parameters": {
+          "resource": "draft",
+          "subject": "=YourCompany and {{ $('Get a deal').first().json.properties.dealname.value }} Engagement",
+          "bodyContent": "=Hi {{ $json.contactToName }},<br><br>\n\nGreat speaking to you today. Here's the <a href=\"{{ $('Webhook').first().json.body[0].propertyValue }}\" style=\"color: #0066cc; text-decoration: underline;\">engagement proposal</a> for you to review and sign and here's more details about <a href=\"https://view.genially.com/69451f406a056f5581511dc3/presentation-pricing-packages\" style=\"color: #0066cc; text-decoration: underline;\">our services and prices</a>.<br><br>\n\nOnce the proposal is signed, we'll introduce you to the team who'll be working with you so you can arrange the kick off call.<br><br>\n\nLooking forward to working with you.<br><br>\n\nBest,<br><br>\n\n[YOUR-EMAIL-SIGNATURE-HTML]",
+          "additionalFields": {
+            "ccRecipients": "={{ $json.contactCc && $json.contactCc.length > 0 ? [...$json.contactCc, 'team@company.com'].join(', ') : 'team@company.com' }}",
+            "bodyContentType": "html",
+            "toRecipients": "={{ $json.contactToEmail }}"
+          }
+        },
+        "type": "n8n-nodes-base.microsoftOutlook",
+        "typeVersion": 2,
+        "position": [
+          1376,
+          416
+        ],
+        "id": "4a285d69-7e06-4fd6-b432-36f9e256a75a",
+        "name": "Create a draft",
+        "webhookId": "12a2c702-64a2-460a-b376-1f9f9ce95501",
+        "credentials": {
+          "microsoftOutlookOAuth2Api": {
+            "id": "azOFMTypy2ecR4Sk",
+            "name": "Your Name's Microsoft Outlook account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "deal",
+          "operation": "get",
+          "dealId": {
+            "__rl": true,
+            "value": "={{ $json.body[0].objectId }}",
+            "mode": "id"
+          },
+          "filters": {
+            "propertiesCollection": {
+              "propertiesValues": {
+                "properties": [
+                  "dealname"
+                ],
+                "propertyMode": "valueOnly"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          512,
+          416
+        ],
+        "id": "54f618db-5833-42db-a338-98b2fc6a6440",
+        "name": "Get a deal",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "associations.associatedVids",
+          "options": {
+            "destinationFieldName": "Contacts"
+          }
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          720,
+          416
+        ],
+        "id": "ab15ff3f-edf8-4288-b124-9b8a6d3bdf67",
+        "name": "Split Out1"
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "operation": "get",
+          "contactId": {
+            "__rl": true,
+            "value": "={{ $json.Contacts }}",
+            "mode": "id"
+          },
+          "additionalFields": {
+            "propertiesCollection": {
+              "propertiesValues": {
+                "properties": [
+                  "email",
+                  "firstname"
+                ],
+                "propertyMode": "valueOnly"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          944,
+          416
+        ],
+        "id": "ce0d10a4-5810-4a6d-ab8f-8e84570d054d",
+        "name": "Get a contact",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "o2pa5Db1D4AtpOKX",
+            "name": "YourCompany HubSpot account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Get contact data from input\nconst contacts = $input.all();\n\n// Initialize result object\nconst result = {\n  contactToName: '',\n  contactToEmail: '',\n  contactCc: []\n};\n\n// Check if we have any contacts\nif (contacts.length > 0) {\n  // First contact becomes \"To\"\n  const firstContact = contacts[0].json;\n  \n  // Get first name only\n  const firstName = firstContact.properties.firstname?.value || '';\n  \n  result.contactToName = firstName;\n  \n  // If no first name available, use email as name\n  if (!result.contactToName) {\n    result.contactToName = firstContact.properties.email?.value || '';\n  }\n  \n  result.contactToEmail = firstContact.properties.email?.value || '';\n  \n  // Rest of contacts become CC (email only)\n  for (let i = 1; i < contacts.length; i++) {\n    const email = contacts[i].json.properties.email?.value;\n    if (email) {\n      result.contactCc.push(email);\n    }\n  }\n}\n\nreturn { json: result };"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1152,
+          416
+        ],
+        "id": "21c0a1ee-8851-4b19-816c-952aff6a7b52",
+        "name": "Extract to and cc contacts"
+      },
+      {
+        "parameters": {
+          "select": "user",
+          "user": {
+            "__rl": true,
+            "value": "U09NRRBRS1K",
+            "mode": "list",
+            "cachedResultName": "vanessa.babicz"
+          },
+          "text": "=Draft ready to send for {{ $('Get a deal').first().json.properties.dealname.value }}\n\n<https://outlook.cloud.microsoft/mail/compose/{{ encodeURIComponent($json.id) }}|View draft>",
+          "otherOptions": {}
+        },
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.4,
+        "position": [
+          1584,
+          416
+        ],
+        "id": "87a45117-8c00-427c-8ff1-0e65802f4321",
+        "name": "Send a message",
+        "webhookId": "05aadf45-8d6c-484c-8efc-e1cb4ba65e75",
+        "credentials": {
+          "slackApi": {
+            "id": "61VGzOLxOe1JTzvl",
+            "name": "YourCompany API Slack account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Switch",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Line Item Details": {
+        "main": [
+          [
+            {
+              "node": "If",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Format Description": {
+        "main": [
+          [
+            {
+              "node": "Update Line Item Description",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Clear description if framework is already present": {
+        "main": [
+          [
+            {
+              "node": "Format Description",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If": {
+        "main": [
+          [
+            {
+              "node": "Clear description if framework is already present",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Clear description if framework is already present1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Clear description if framework is already present1": {
+        "main": [
+          [
+            {
+              "node": "Remove Framework from Line Item Description",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Out": {
+        "main": [
+          [
+            {
+              "node": "Get Line Item Details",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Switch": {
+        "main": [
+          [
+            {
+              "node": "Split Out",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Get a deal",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get a deal": {
+        "main": [
+          [
+            {
+              "node": "Split Out1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Out1": {
+        "main": [
+          [
+            {
+              "node": "Get a contact",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get a contact": {
+        "main": [
+          [
+            {
+              "node": "Extract to and cc contacts",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract to and cc contacts": {
+        "main": [
+          [
+            {
+              "node": "Create a draft",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create a draft": {
+        "main": [
+          [
+            {
+              "node": "Send a message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Your Name",
+    "name": "Version 569b9da7",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-18T16:19:48.189Z",
+        "id": 39,
+        "workflowId": "lNJtiE7__TLqhRX9McPtw",
+        "versionId": "569b9da7-d571-4168-b14c-1f3fec911107",
+        "event": "activated",
+        "userId": "2acf5ea0-d7f1-40b4-a56c-c252e9a68fbf"
+      }
+    ]
+  }
+}
