@@ -1,0 +1,1088 @@
+{
+  "name": "GHL: WhatsApp Lead Nurture + Qualifier (Manual review)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "ed35e7da-0ba3-4bd7-b6cd-e4199b64cce3",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://services.leadconnectorhq.com/contacts/",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "locationId",
+              "value": "YOUR_LOCATION_ID"
+            },
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a81a684d-912f-4bd7-bf04-2072d08a6d80",
+      "name": "Get All Contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        560
+      ],
+      "credentials": {
+        "highLevelApi": {
+          "id": "BNIr54gmGhipNLBC",
+          "name": "HighLevel account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract contacts array into individual items\nconst response = $input.first().json;\nconst contacts = response.contacts || [];\n\nif (contacts.length === 0) {\n  return [{ json: { error: 'No contacts found', total: 0 } }];\n}\n\nreturn contacts.map(c => ({ json: c }));"
+      },
+      "id": "0679e88e-aa5f-4bbf-8927-da7e984a8909",
+      "name": "Extract Contacts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "aa7795aa-7e3d-4d92-913e-7d2f04b62888",
+      "name": "Loop Contacts",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        672,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/conversations/search",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "locationId",
+              "value": "YOUR_LOCATION_ID"
+            },
+            {
+              "name": "contactId",
+              "value": "={{ $json.id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c9ba68b2-bb47-4745-88cb-40d2d47d6345",
+      "name": "Search WhatsApp Conv",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        896,
+        576
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "highLevelApi": {
+          "id": "BNIr54gmGhipNLBC",
+          "name": "HighLevel account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get contact data from the loop (before HTTP replaced it)\nconst contact = $('Loop Contacts').first().json;\nconst searchResult = $input.first().json;\nconst conversations = searchResult.conversations || [];\n\n// Find WhatsApp conversation\nconst whatsappConv = conversations.find(c => {\n  const cType = (c.type || '').toLowerCase();\n  const lastType = (c.lastMessageType || '').toLowerCase();\n  return cType.includes('whatsapp') ||\n    cType === 'type_phone' ||\n    lastType.includes('whatsapp') ||\n    cType === 'custom_whatsapp';\n});\n\nif (!whatsappConv) {\n  return [{\n    json: {\n      skip: true,\n      contactId: contact.id,\n      contactName: contact.firstName || contact.name || 'Unknown',\n      reason: 'no_whatsapp_conversation'\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    skip: false,\n    conversationId: whatsappConv.id,\n    contactId: contact.id,\n    firstName: contact.firstName || '',\n    lastName: contact.lastName || '',\n    tags: contact.tags || [],\n    email: contact.email || '',\n    phone: contact.phone || '',\n    lastMessageDate: whatsappConv.lastMessageDate || null\n  }\n}];"
+      },
+      "id": "4ead0c17-2c1d-4322-a09f-62340d264f6f",
+      "name": "Process Search Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 3
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-has-conv",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3c392346-02d3-455f-ae19-d676fafc1570",
+      "name": "Has Conversation?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1328,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/conversations/{{ $json.conversationId }}/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3bfdc2b2-ee42-41f2-b54c-ccd52d77861b",
+      "name": "Get Messages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1568,
+        528
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "highLevelApi": {
+          "id": "BNIr54gmGhipNLBC",
+          "name": "HighLevel account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Contact context from Process Search Results\nconst ctx = $('Process Search Results').first().json;\n\n// Messages from Get Messages HTTP response\n// GHL nests as { messages: { messages: [...], lastMessageId, nextPage } }\nconst messagesData = $input.first().json;\nconst rawMessages = messagesData.messages || {};\nconst messages = Array.isArray(rawMessages) ? rawMessages : (rawMessages.messages || []);\n\n// Sort messages by date (oldest first)\nconst sortedMessages = messages.sort((a, b) =>\n  new Date(a.dateAdded || a.createdAt || 0) - new Date(b.dateAdded || b.createdAt || 0)\n);\n\n// === 24h WINDOW CHECK ===\nconst now = Date.now();\nconst lastInbound = [...sortedMessages].reverse().find(m =>\n  m.direction === 'inbound' || m.direction === 1 || m.type === 'TYPE_INBOUND'\n);\nconst canSendFreeForm = !!(lastInbound &&\n  (now - new Date(lastInbound.dateAdded || lastInbound.createdAt).getTime()) < 24 * 60 * 60 * 1000);\n\n// === TAG ANALYSIS ===\nconst tags = (ctx.tags || []).map(t => t.toLowerCase());\nconst hasConnectTag = tags.includes('connect');\n\n// === WEBINAR CONFIG ===\n// UPDATE THESE when new webinars are scheduled\n// Format: { name: \"Display Name\", date: \"YYYY-MM-DD\", tag: \"tag-name\" }\nconst upcomingWebinars = [\n  // { name: \"March Masterclass\", date: \"2026-03-28\", tag: \"webinar-march-2026\" }\n];\n\nconst threeWeeksMs = 21 * 24 * 60 * 60 * 1000;\nconst relevantWebinars = upcomingWebinars.filter(w => {\n  const wDate = new Date(w.date).getTime();\n  return wDate > now && wDate < (now + threeWeeksMs);\n});\n\nconst webinarStatus = relevantWebinars.map(w => ({\n  ...w,\n  isRegistered: tags.includes(w.tag.toLowerCase()),\n  hasAttended: tags.some(t => t.includes(w.tag.toLowerCase() + '-attended'))\n}));\n\n// Past webinars (for post-workshop follow-up)\nconst pastWebinars = upcomingWebinars.filter(w => {\n  const wDate = new Date(w.date).getTime();\n  return wDate < now && wDate > (now - 14 * 24 * 60 * 60 * 1000);\n}).map(w => ({\n  ...w,\n  isRegistered: tags.includes(w.tag.toLowerCase()),\n  hasAttended: tags.some(t => t.includes(w.tag.toLowerCase() + '-attended')),\n  daysAttended: tags.filter(t => t.startsWith(w.tag.toLowerCase() + '-day')).map(t => t.replace(w.tag.toLowerCase() + '-day', ''))\n}));\n\n// === CONVERSATION HISTORY ===\nconst history = sortedMessages.map(m => {\n  const isInbound = m.direction === 'inbound' || m.direction === 1 || m.type === 'TYPE_INBOUND';\n  const sender = isInbound ? ctx.firstName : 'Shimrit';\n  const body = m.body || m.message || m.text || '[media/attachment]';\n  const date = m.dateAdded || m.createdAt || '';\n  return `[${date}] ${sender}: ${body}`;\n}).join('\\n');\n\n// Last message info\nconst lastMessage = sortedMessages[sortedMessages.length - 1];\nconst lastMessageIsInbound = !!(lastMessage &&\n  (lastMessage.direction === 'inbound' || lastMessage.direction === 1 || lastMessage.type === 'TYPE_INBOUND'));\nconst lastMessageAge = lastMessage ?\n  Math.round((now - new Date(lastMessage.dateAdded || lastMessage.createdAt).getTime()) / (1000 * 60 * 60)) : null;\n\n// === BUILD SYSTEM PROMPT ===\nconst connectSection = hasConnectTag\n  ? 'This contact already has a \"connect\" tag \u2014 they have had their free intro chat. Skip offering a connect call. Focus on qualification and program recommendation.'\n  : 'This contact does NOT have a \"connect\" tag. Your primary goal is to book a free 15-minute chat. Position it naturally: \"I would love to hop on a quick chat to learn more about where you are at and what you are working toward.\" Never call it a \"connect call\" \u2014 just frame it as a casual conversation.';\n\nlet webinarSection = 'No upcoming webinars within 3 weeks.';\nif (webinarStatus.length > 0) {\n  webinarSection = webinarStatus.map(w =>\n    w.isRegistered\n      ? 'Webinar \"' + w.name + '\" (' + w.date + '): Contact IS registered. Ask if they are planning to attend. You CAN offer a pre-workshop connect chat even if they have the connect tag \u2014 this is an exception.'\n      : 'Webinar \"' + w.name + '\" (' + w.date + '): Contact is NOT registered. Invite them!'\n  ).join('\\n   ');\n}\n\nlet pastWebinarSection = '';\nif (pastWebinars.length > 0) {\n  pastWebinarSection = pastWebinars.map(w =>\n    w.hasAttended\n      ? 'Past webinar \"' + w.name + '\": Contact ATTENDED' + (w.daysAttended.length > 0 ? ' (days: ' + w.daysAttended.join(', ') + ')' : '') + '. Ask what they thought about it! If they do not have a connect tag, offer a connect chat.'\n      : w.isRegistered\n        ? 'Past webinar \"' + w.name + '\": Contact was REGISTERED but did NOT attend. Gently mention it.'\n        : ''\n  ).filter(Boolean).join('\\n   ');\n}\n\nconst systemPrompt = $input.first().json.Context;\n\nconst userPrompt = 'Contact: ' + ctx.firstName + (ctx.lastName ? ' ' + ctx.lastName : '') + '\\nTags: ' + ((ctx.tags || []).join(', ') || 'none') + '\\nLast message from: ' + (lastMessageIsInbound ? 'contact (their turn \u2014 we should respond)' : 'Shimrit (our turn \u2014 this is a follow-up)') + '\\nLast message age: ' + (lastMessageAge !== null ? lastMessageAge + ' hours ago' : 'unknown') + '\\nCan send free-form: ' + (canSendFreeForm ? 'YES (within 24h window)' : 'NO (outside 24h \u2014 will need template)') + '\\n\\nConversation history (oldest to newest):\\n' + (history || '[No previous messages \u2014 this would be the first outreach]');\n\n// Build OpenAI request body as plain object\nconst requestBody = {\n  model: 'gpt-4o-mini',\n  messages: [\n    { role: 'system', content: systemPrompt },\n    { role: 'user', content: userPrompt }\n  ],\n  max_tokens: 300,\n  temperature: 0.7\n};\n\nreturn [{\n  json: {\n    contactId: ctx.contactId,\n    conversationId: ctx.conversationId,\n    firstName: ctx.firstName,\n    lastName: ctx.lastName,\n    tags: ctx.tags,\n    canSendFreeForm,\n    lastMessageIsInbound,\n    lastMessageAge,\n    requestBody\n  }\n}];"
+      },
+      "id": "4cc6e5e4-5008-45ef-84a0-517b02017297",
+      "name": "Build AI Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2016,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "54780ac6-dcbd-41c3-9e86-4f8a0a346c8a",
+      "name": "Call OpenAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2224,
+        528
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "d03HNhtWh3tV5wdT",
+          "name": "OpenAi account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Build AI Prompt').first().json;\nconst response = $input.first().json;\n\n// Handle OpenAI errors\nif (response.error) {\n  return [{\n    json: {\n      contactId: ctx.contactId,\n      firstName: ctx.firstName,\n      error: 'OpenAI API error: ' + JSON.stringify(response.error),\n      canSendFreeForm: false\n    }\n  }];\n}\n\nconst aiMessage = response.choices[0].message.content.trim();\n\n// Prepare the GHL send body\nconst sendBody = {\n  type: 'WhatsApp',\n  contactId: ctx.contactId,\n  message: aiMessage\n};\n\nreturn [{\n  json: {\n    contactId: ctx.contactId,\n    conversationId: ctx.conversationId,\n    firstName: ctx.firstName,\n    lastName: ctx.lastName,\n    tags: ctx.tags,\n    canSendFreeForm: ctx.canSendFreeForm,\n    lastMessageIsInbound: ctx.lastMessageIsInbound,\n    aiMessage,\n    sendBody\n  }\n}];"
+      },
+      "id": "24b4dee2-61d5-4722-8498-454d7ac4c318",
+      "name": "Parse & Decide",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 3
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-can-send",
+              "leftValue": "={{ $json.canSendFreeForm }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9499eab6-53bb-4543-b849-d6486728c568",
+      "name": "Can Send Free-Form?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2672,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1XYI9KL6qDjQiB1Y7scGmjhai42S2xCTOI4SJDKNagnE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XYI9KL6qDjQiB1Y7scGmjhai42S2xCTOI4SJDKNagnE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "Review",
+            "Timestamp": "={{ $now.toISO() }}",
+            "Contact ID": "={{ $json.contactId }}",
+            "Contact Name": "={{ $json.firstName }} {{ $json.lastName }}",
+            "Tags": "={{ (typeof $json.tags === 'object' && Array.isArray($json.tags)) ? $json.tags.join(', ') : ($json.tags || '') }}",
+            "AI Message": "={{ $json.aiMessage }}",
+            "Conversation ID": "={{ $json.conversationId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Contact Name",
+              "displayName": "Contact Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tags",
+              "displayName": "Tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Message",
+              "displayName": "AI Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Contact ID",
+              "displayName": "Contact ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Conversation ID",
+              "displayName": "Conversation ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "b1a1a1a1-0001-4000-a001-000000000001",
+      "name": "Append to Review Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3184,
+        800
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "2182fe4f-0108-47d8-8d0a-fb8b5f07f5f4",
+      "name": "Skip No Conversation",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        688
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "350f1deb-1718-4856-bc1e-df127316259e",
+      "name": "Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        896,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## GHL: Coach WhatsApp Qualifier\n\n**What it does:** Loops through all GHL contacts, checks WhatsApp conversations, and uses AI (GPT-4o-mini in the coach's voice) to craft contextual follow-ups or responses.\n\n**Manual Review Flow:** AI messages are written to a Google Sheet for Vanessa to review. Change Status to \"Approved\" to send.\n\n**Sender Path:** Runs every 5 minutes, picks up \"Approved\" rows, sends via GHL API, marks as \"Sent\".\n\n### Webinar Config\nEdit the `upcomingWebinars` array in the **Build AI Prompt** code node.\n\n### Notes\n- GHL Location: YOUR_LOCATION_ID\n- Currently fetches max 100 contacts per run\n- Contacts outside 24h window are logged but NOT messaged (check Log Template Needed output)\n- Review sheet: Status dropdown (Review/Approved/Sent/Rejected)",
+        "height": 500,
+        "width": 450
+      },
+      "id": "a29b1dbc-2d00-4aff-99d9-feab638c4472",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        -1184
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "b1a1a1a1-0002-4000-a002-000000000002",
+      "name": "Every 5 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1XYI9KL6qDjQiB1Y7scGmjhai42S2xCTOI4SJDKNagnE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XYI9KL6qDjQiB1Y7scGmjhai42S2xCTOI4SJDKNagnE/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Approved"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1a1a1a1-0003-4000-a003-000000000003",
+      "name": "Read Review Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        1488
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "b1a1a1a1-0006-4000-a006-000000000006",
+      "name": "Loop Approved",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        480,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\n\n// Build the GHL send body\nconst sendBody = {\n  type: 'WhatsApp',\n  contactId: row['Contact ID'],\n  message: row['AI Message']\n};\n\nreturn [{\n  json: {\n    sendBody,\n    contactId: row['Contact ID'],\n    contactName: row['Contact Name'],\n    conversationId: row['Conversation ID'],\n    aiMessage: row['AI Message'],\n    rowNumber: row.row_number\n  }\n}];"
+      },
+      "id": "b1a1a1a1-0007-4000-a007-000000000007",
+      "name": "Prepare Send Body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/conversations/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "highLevelApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.sendBody }}",
+        "options": {}
+      },
+      "id": "b1a1a1a1-0008-4000-a008-000000000008",
+      "name": "Send Approved Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1056,
+        1488
+      ],
+      "credentials": {
+        "highLevelApi": {
+          "id": "BNIr54gmGhipNLBC",
+          "name": "HighLevel account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1XYI9KL6qDjQiB1Y7scGmjhai42S2xCTOI4SJDKNagnE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "Sent",
+            "Contact ID": "={{ $('Prepare Send Body').first().json.contactId }}"
+          },
+          "matchingColumns": [
+            "Contact ID"
+          ],
+          "schema": [
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Contact ID",
+              "displayName": "Contact ID",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1a1a1a1-0009-4000-a009-000000000009",
+      "name": "Update Status to Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1312,
+        1488
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "b1a1a1a1-0010-4000-a010-000000000010",
+      "name": "Sender Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        720,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Listens for approval and sends the message on GHL",
+        "height": 592,
+        "width": 1712,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -64,
+        1216
+      ],
+      "typeVersion": 1,
+      "id": "2a55f61c-0dcc-4923-862e-2466731d9826",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fb8bb353-cbb2-4a01-bd97-c64d1d2187f0",
+              "name": "Context",
+              "value": "You are Jane Doe WhatsApp assistant.\nYou write messages exactly as Jane would \u2014 warm, direct, empowering, authentic.\n\nJane is a transformational coach who created the Human Instrument\u00ae Mastery Method. She is a former professional musician (20+ years) who hit burnout despite earning \u20ac100k+ in her first business year, then rebuilt her life around the principle that success and fulfillment are not mutually exclusive.\n\nVOICE GUIDELINES:\n\nWrite like a WhatsApp message \u2014 casual, warm, personal. Short sentences.\nKeep messages concise (2\u20135 sentences max). This is WhatsApp, not email.\nUse the contact's first name naturally.\nNever be salesy. Be genuinely curious and helpful.\nIf they asked a question, answer it FIRST before pursuing any goals.\nIf conversation is cold (no reply in days), be gentle and non-pushy.\nMatch their energy \u2014 excited = match it, hesitant = be understanding.\nUse occasional emojis naturally (\u2728 \ud83d\ude4f \ud83d\udcab) but do not overdo it.\nSound like a real person texting, not a bot or a sales script.\n\nAVAILABLE PROGRAMS:\n\nMaster Your Path Coaching \u2014 main 1:1 transformational coaching program.\nThree pillars:\nAlign With Your Passion (clarify what you want)\nReprogram Your Mind (shift limiting beliefs)\nFulfil Your Purpose (take inspired action)\nFor people who want success, health, relationships, and fulfillment without compromise.\nCoaching Certification Program \u2014 for people who want to become certified coaches in the Human Instrument\u00ae Mastery method.\n\nRESOURCES TO SHARE WHEN RELEVANT:\n\nThe Human Instrument Mastery Podcast (Spotify, Apple Podcasts, YouTube)\nWebsite: janedoe.com\nBook a free chat: https://links.buildhub.se/widget/bookings/connectcall-masteryourpath\n\nDECISION TREE \u2014 follow this priority order:\n\n1. RESPOND TO THEIR LAST MESSAGE\nIf the last message is from the contact, respond to it naturally first.\nNote: Last message was 340 hours ago. The conversation may feel cold \u2014 ease back in gently.\n\n2. CONNECT CALL\nThis contact does NOT have a \"connect\" tag. Your primary goal is to book a free 15-minute chat.\nPosition it naturally:\n\"I would love to hop on a quick chat to learn more about where you are at and what you are working toward.\"\nNever call it a \"connect call\" \u2014 just frame it as a casual conversation.\n\n3. WEBINAR\nNo upcoming webinars within 3 weeks.\n\n4. QUALIFICATION (weave naturally into conversation, never interrogate)\nGather through natural conversation:\n\nDesire/motivation: What do they want to change or achieve?\nSpecific goals: What does their ideal life look like?\nBudget openness: Are they open to investing in themselves/coaching?\nPrior coaching: Have they worked with a coach before?\nPain points: What is holding them back right now?\n\n5. PROGRAM RECOMMENDATION (only if qualified through conversation)\nIf they seem ready, suggest a consultation call.\nAsk about tomorrow's availability or what times work for them.\nDo not push \u2014 let it flow naturally from the conversation.\n\nOUTPUT:\nReturn ONLY the WhatsApp message text.\nNo explanations, no labels, no metadata.\nJust the message Jane would send.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1792,
+        528
+      ],
+      "id": "b19cd90d-55b4-4823-ad8f-21fb5f245171",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "content": "## Reply Generator",
+        "height": 848,
+        "width": 3572,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -64,
+        272
+      ],
+      "typeVersion": 1,
+      "id": "7587867b-41f3-49a1-8558-5e9a6c8b9bed",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1XYI9KL6qDjQiB1Y7scGmjhai42S2xCTOI4SJDKNagnE"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XYI9KL6qDjQiB1Y7scGmjhai42S2xCTOI4SJDKNagnE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "Needs Template",
+            "Timestamp": "={{ $now.toISO() }}",
+            "Contact ID": "={{ $json.contactId }}",
+            "Contact Name": "={{ $json.firstName }} {{ $json.lastName }}",
+            "Tags": "={{ (typeof $json.tags === 'object' && Array.isArray($json.tags)) ? $json.tags.join(', ') : ($json.tags || '') }}",
+            "AI Message": "={{ $json.aiMessage }}",
+            "Conversation ID": "={{ $json.conversationId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Contact Name",
+              "displayName": "Contact Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tags",
+              "displayName": "Tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Message",
+              "displayName": "AI Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Contact ID",
+              "displayName": "Contact ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Conversation ID",
+              "displayName": "Conversation ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "aec0d585-d07c-4af1-bfee-7c5414e6b7de",
+      "name": "Append to Review Sheet for Template Creation",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2896,
+        736
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nlewB0oiappOoNCx",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get All Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Contacts": {
+      "main": [
+        [
+          {
+            "node": "Extract Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Contacts": {
+      "main": [
+        [
+          {
+            "node": "Loop Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Contacts": {
+      "main": [
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search WhatsApp Conv",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search WhatsApp Conv": {
+      "main": [
+        [
+          {
+            "node": "Process Search Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Search Results": {
+      "main": [
+        [
+          {
+            "node": "Has Conversation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Conversation?": {
+      "main": [
+        [
+          {
+            "node": "Get Messages",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip No Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Messages": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build AI Prompt": {
+      "main": [
+        [
+          {
+            "node": "Call OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Parse & Decide",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Decide": {
+      "main": [
+        [
+          {
+            "node": "Can Send Free-Form?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Can Send Free-Form?": {
+      "main": [
+        [
+          {
+            "node": "Append to Review Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append to Review Sheet for Template Creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Review Sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip No Conversation": {
+      "main": [
+        [
+          {
+            "node": "Loop Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 5 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Read Review Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Review Sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Approved": {
+      "main": [
+        [
+          {
+            "node": "Sender Done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Send Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Send Body": {
+      "main": [
+        [
+          {
+            "node": "Send Approved Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Approved Message": {
+      "main": [
+        [
+          {
+            "node": "Update Status to Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status to Sent": {
+      "main": [
+        [
+          {
+            "node": "Loop Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Build AI Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Review Sheet for Template Creation": {
+      "main": [
+        [
+          {
+            "node": "Loop Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "05037a1d-3629-4aa8-a140-095b70095590",
+  "meta": {
+    "instanceId": "297dfe96ebdf0bf7bd7d1332a0cf0e383c332aee5454c908d2919eb78e9b5b7b"
+  },
+  "id": "TEMPLATE",
+  "tags": []
+}
