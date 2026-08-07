@@ -2,12 +2,19 @@
 <rss version="2.0"><channel>
 <title>Polling probe (static)</title>
 <link>https://example.com/probe</link>
-<description>Static feed for n8n polling-trigger empty-poll execution-count test. Never changes.</description>
+<description>Static feed for n8n polling-trigger empty-poll execution-count test.</description>
+<item>
+<title>Probe item 2 FRESH</title>
+<link>https://example.com/probe/2</link>
+<guid>probe-item-0002</guid>
+<pubDate>Fri, 07 Aug 2026 22:00:00 GMT</pubDate>
+<description>Fresh item to test whether the trigger actually polls.</description>
+</item>
 <item>
 <title>Probe item 1</title>
 <link>https://example.com/probe/1</link>
 <guid>probe-item-0001</guid>
 <pubDate>Mon, 01 Jun 2026 00:00:00 GMT</pubDate>
-<description>Baseline item, fixed date, never updated.</description>
+<description>Baseline item.</description>
 </item>
 </channel></rss>
